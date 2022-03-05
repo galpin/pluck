@@ -1,0 +1,6 @@
+graphql-core==3.2.0
+pandas==1.4.1
+pytest==7.0.1
+httpretty==1.1.4
+isort==5.10.1
+black==22.1.0

@@ -1,0 +1,10 @@
+{
+  launches @frame {
+    id
+    mission: mission_name
+    rocket {
+      name: rocket_name
+      type: rocket_type
+    }
+  }
+}

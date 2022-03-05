@@ -1,0 +1,10 @@
+{
+  cores(limit: 5) @frame {
+    id
+    status
+    missions @frame {
+      name
+      flight
+    }
+  }
+}
