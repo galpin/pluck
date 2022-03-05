@@ -1997,7 +1997,7 @@
         ]
       },
       {
-        "mission_name": "Es’hail 2",
+        "mission_name": "Es\u2019hail 2",
         "launch_date_local": "2018-11-15T15:46:00-05:00",
         "launch_site": {
           "site_name_long": "Kennedy Space Center Historic Launch Complex 39A"
@@ -4205,7 +4205,7 @@
         ]
       },
       {
-        "mission_name": "TürkmenÄlem 52°E / MonacoSAT",
+        "mission_name": "T\u00fcrkmen\u00c4lem 52\u00b0E / MonacoSAT",
         "launch_date_local": "2015-04-27T19:03:00-04:00",
         "launch_site": {
           "site_name_long": "Cape Canaveral Air Force Station Space Launch Complex 40"

@@ -59,7 +59,7 @@
       },
       {
         "id": "23",
-        "mission_name": "TürkmenÄlem 52°E / MonacoSAT",
+        "mission_name": "T\u00fcrkmen\u00c4lem 52\u00b0E / MonacoSAT",
         "rocket": {
           "rocket_name": "Falcon 9"
         }
@@ -598,7 +598,7 @@
       },
       {
         "id": "70",
-        "mission_name": "Es’hail 2",
+        "mission_name": "Es\u2019hail 2",
         "rocket": {
           "rocket_name": "Falcon 9"
         }
