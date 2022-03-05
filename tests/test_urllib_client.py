@@ -1,6 +1,5 @@
 import json
-from collections import Callable
-from typing import Optional
+from typing import Optional, Callable
 
 import httpretty
 from httpretty.core import HTTPrettyRequest
