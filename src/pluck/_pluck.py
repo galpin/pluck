@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
 from ._execution import Executor, ExecutorOptions
 from .client import GraphQLClient, GraphQLRequest
@@ -17,7 +17,7 @@ class Response:
     """
 
     data: Dict
-    errors: Optional[Dict]
+    errors: Optional[List]
     frames: Dict[str, DataFrame]
 
     def __iter__(self):
