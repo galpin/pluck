@@ -66,11 +66,11 @@ def create(
 
 
 def read_graphql(
-    query: str,
-    variables: Optional[Dict[str, Any]] = None,
+    query: Query,
+    variables: Variables = None,
     *,
     url: Url,
-    headers: Optional[Headers] = None,
+    headers: Headers = None,
     separator: str = ".",
     client: GraphQLClient = None,
 ) -> Response:
