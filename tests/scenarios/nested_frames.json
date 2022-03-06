@@ -1,0 +1,60 @@
+{
+  "data": {
+    "cores": [
+      {
+        "id": "B1015",
+        "status": "lost",
+        "missions": [
+          {
+            "name": "CRS-6",
+            "flight": 22
+          }
+        ]
+      },
+      {
+        "id": "B0006",
+        "status": "lost",
+        "missions": [
+          {
+            "name": "CRS-1",
+            "flight": 9
+          }
+        ]
+      },
+      {
+        "id": "B1034",
+        "status": "lost",
+        "missions": [
+          {
+            "name": "Inmarsat-5 F4",
+            "flight": 40
+          }
+        ]
+      },
+      {
+        "id": "B1016",
+        "status": "lost",
+        "missions": [
+          {
+            "name": "T\u00fcrkmen\u00c4lem 52\u00b0E / MonacoSAT",
+            "flight": 23
+          }
+        ]
+      },
+      {
+        "id": "B1025",
+        "status": "inactive",
+        "missions": [
+          {
+            "name": "CRS-9",
+            "flight": 32
+          },
+          {
+            "name": "Falcon Heavy Test Flight",
+            "flight": 55
+          }
+        ]
+      }
+    ]
+  }
+}
