@@ -21,6 +21,8 @@ Let's read the first five SpaceX launches into a data-frame:
 ```python
 import pluck
 
+SpaceX = "https://api.spacex.land/graphql"
+
 query = """
 {
   launches(limit: 5) {
@@ -32,7 +34,7 @@ query = """
   }
 }
 """
-frame, = pluck.read_graphql(query, url="https://api.spacex.land/graphql")
+frame, = pluck.read_graphql(query, url=SpaceX)
 frame
 ```
 
@@ -44,15 +46,6 @@ frame
 | FalconSat           | 2006-03-25T10:30:00+12:00| Falcon 1                  |
 | CRS-1               | 2012-10-08T20:35:00-04:00| Falcon 9                  |
 
-
-Pluck also provides a `create` factory function which returns a customized `read_graphql` function which closes over the `url` and other configuration.
-
-The examples below use the [SpaceX GraphQL API](https://api.spacex.land/graphql/) and `pluck.create` for breivity.
-
-
-```python
-read_graphql = pluck.create("https://api.spacex.land/graphql")
-```
 
 ### Implicit Mode
 
@@ -81,7 +74,7 @@ query = """
   }
 }
 """
-launches, = read_graphql(query)
+launches, = pluck.read_graphql(query, url=SpaceX)
 launches
 ```
 
@@ -126,7 +119,7 @@ query = """
   }
 }
 """
-launches, rockets = read_graphql(query)
+launches, rockets = pluck.read_graphql(query, url=SpaceX)
 ```
 
 Now we have the original `launches` and a new `rockets` data-frame:
@@ -164,7 +157,7 @@ query = """
   }
 }
 """
-capsules, = read_graphql(query)
+capsules, = pluck.read_graphql(query, url=SpaceX)
 capsules
 ```
 
@@ -202,7 +195,7 @@ query = """
   }
 }
 """
-cores, missions = read_graphql(query)
+cores, missions = pluck.read_graphql(query, url=SpaceX)
 ```
 
 Now we have the `cores`:
@@ -258,7 +251,7 @@ query = """
   }
 }
 """
-launches, = read_graphql(query)
+launches, = pluck.read_graphql(query, url=SpaceX)
 launches
 ```
 
@@ -286,7 +279,7 @@ query = """
   }
 }
 """
-launches, = read_graphql(query)
+launches, = pluck.read_graphql(query, url=SpaceX)
 launches
 ```
 
@@ -296,52 +289,4 @@ launches
 | Sentinel-6 Michael Freilich |
 | Crew-1                  |
 | GPS III SV04 (Sacagawea)|
-| Starlink-14 (v1.0)      |
-
-
-### Responses
-
-Most of the time, Pluck is used to transform the GraphQL query directly into one or more data-frames. However, it is also possible to retreive the the raw GraphQL response (as well as the data-frames) by not immeadiately iterating over the return value.
-
-The return value is a `PluckResponse` object and contains the `data` and `errors` from the raw GraphQL response and map of `Dict[str, DataFrame]` for each data-frame in the query. The name of the frame corresponds to the field on which the `@frame` directive is placed or `default` when using implicit mode.
-
-
-```python
-query = """
-{
-  launches(limit: 5) @frame {
-    id
-    mission_name
-    rocket {
-      rocket_name
-    }
-  }
-  landpads(limit: 5) @frame {
-    id
-    full_name
-    location {
-      region
-      latitude
-      longitude
-    }
-  }
-}
-"""
-response = read_graphql(query)
-
-# print(response.data.keys())
-# print(response.errors)
-# print(response.frames.keys())
-
-launches, landpads = response
-landpads
-```
-
-| id | full_name                 | location.region   |   location.latitude |   location.longitude |
-|:-------|:------------------------------|:------------------|--------------------:|---------------------:|
-| LZ-1   | Landing Zone 1            | Florida       |             28.4858 |             -80.5444 |
-| LZ-2   | Landing Zone 2            | Florida       |             28.4858 |             -80.5444 |
-| LZ-4   | Landing Zone 4            | California    |             34.633  |            -120.615  |
-| OCISLY | Of Course I Still Love You| Florida       |             28.4104 |             -80.6188 |
-| JRTI-1 | Just Read The Instructions V1 | Florida       |             28.4104 |             -80.6188 |
-
+   
