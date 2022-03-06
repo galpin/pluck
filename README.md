@@ -93,7 +93,7 @@ The column names are no longer prefixed with `launches` because it is now the ro
 
 ### Multiple @frame directives
 
-We can also pluck multiple data-frames from the a single GraphQL query.
+We can also pluck multiple data-frames from a single GraphQL query.
 
 Let's query the first five SpaceX `rockets` as well: 
 
