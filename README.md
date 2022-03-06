@@ -8,7 +8,7 @@ Pluck is a GraphQL client that transforms queries into Pandas data-frames.
 Install Pluck from PyPi:
 
 ```bash
-pip install pluck
+pip install pluck-graphql
 ```
 
 ## Introduction
