@@ -9,7 +9,7 @@ import pluck
 from pluck.client import GraphQLClient, GraphQLRequest, GraphQLResponse
 
 
-class TestGraphQLClient(GraphQLClient):
+class MockGraphQLClient(GraphQLClient):
     def __init__(self, response: Dict):
         self.response = GraphQLResponse.from_dict(response)
 
@@ -47,7 +47,7 @@ def test_when_custom_headers():
 
 def test_when_custom_client():
     expected = {"data": {"field": "value"}}
-    client = TestGraphQLClient(expected)
+    client = MockGraphQLClient(expected)
 
     actual = pluck.read_graphql(
         "{ field }",
