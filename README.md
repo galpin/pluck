@@ -53,7 +53,7 @@ frame
 
 The query above uses _implicit mode_. This is where the entire response is normalized into a single data-frame and the nested fields are separated by a period.
 
-The return value from `read_graphql` is an instance of `PluckResponse`. This object is _iterable_ and enumerates the data-frames in the query. Because this query uses _implicit mode_, the iterator contains only a single data-frame (note that the trailing comma is still required).
+The return value from `read_graphql` is an instance of `pluck.Response`. This object is _iterable_ and enumerates the data-frames in the query. Because this query uses _implicit mode_, the iterator contains only a single data-frame (note that the trailing comma is still required).
 
 ### @frame directive
 
@@ -298,7 +298,7 @@ launches
 
 Most of the time, Pluck is used to transform the GraphQL query directly into one or more data-frames. However, it is also possible to retreive the the raw GraphQL response (as well as the data-frames) by not immeadiately iterating over the return value.
 
-The return value is a `PluckResponse` object and contains the `data` and `errors` from the raw GraphQL response and map of `Dict[str, DataFrame]` containing each data-frame in the query. The name of the frame corresponds to the field on which the `@frame` directive is placed or `default` when using implicit mode.
+The return value is a `pluck.Response` object and contains the `data` and `errors` from the raw GraphQL response and map of `Dict[str, DataFrame]` containing each data-frame in the query. The name of the frame corresponds to the field on which the `@frame` directive is placed or `default` when using implicit mode.
 
 
 ```python
