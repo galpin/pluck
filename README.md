@@ -1,6 +1,8 @@
 
 # Pluck 🚀 🍊
 
+![PyPI](https://img.shields.io/pypi/v/pluck-graphql) ![GitHub](https://img.shields.io/github/license/galpin/pluck)
+
 Pluck is a GraphQL client that transforms queries into Pandas data-frames.
 
 ## Installation
