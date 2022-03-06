@@ -7,7 +7,6 @@ from httpretty.core import HTTPrettyRequest
 
 import pluck
 from pluck.client import GraphQLClient, GraphQLRequest, GraphQLResponse
-from pluck.libraries import DataFrameLibrary, Records
 
 
 class TestGraphQLClient(GraphQLClient):
@@ -16,18 +15,6 @@ class TestGraphQLClient(GraphQLClient):
 
     def execute(self, request: GraphQLRequest) -> GraphQLResponse:
         return self.response
-
-
-class TestDataFrame:
-    records: Records
-
-    def __init__(self, records: Records):
-        self.records = records
-
-
-class TestDataFrameLibrary(DataFrameLibrary):
-    def create(self, data: Records) -> TestDataFrame:
-        return TestDataFrame(list(data))
 
 
 def test_when_url():
@@ -69,22 +56,6 @@ def test_when_custom_client():
     )
 
     assert actual.data == {"field": "value"}
-
-
-def test_when_custom_library():
-    expected = {"data": {"field": "value"}}
-    client = TestGraphQLClient(expected)
-    library = TestDataFrameLibrary()
-
-    (actual,) = pluck.read_graphql(
-        "{ field }",
-        library=library,
-        client=client,
-        url="http://spacex/graphql",
-    )
-
-    assert isinstance(actual, TestDataFrame)
-    assert actual.records == [{"field": "value"}]
 
 
 def test_url_must_be_specified():

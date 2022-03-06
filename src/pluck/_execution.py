@@ -1,6 +1,6 @@
 import itertools
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 from ._json import (
@@ -17,7 +17,7 @@ from ._normalization import normalize
 from ._parser import ParsedQuery, QueryParser
 from ._utils import timeit
 from .client import GraphQLClient, GraphQLRequest, GraphQLResponse, UrllibGraphQLClient
-from .libraries import DataFrame, DataFrameLibrary, PandasDataFrameLibrary
+from ._libraries import DataFrame, DataFrameLibrary, PandasDataFrameLibrary
 
 ExecutorResult = Tuple[Dict, Dict, Dict[str, DataFrame]]
 EMPTY = tuple()
@@ -27,7 +27,7 @@ EMPTY = tuple()
 class ExecutorOptions:
     separator: str
     client: Optional[GraphQLClient]
-    library: Optional[DataFrameLibrary]
+    library: Optional[DataFrameLibrary] = field(default=None)
 
     def __post_init__(self):
         assert self.separator, "separator must be specified"

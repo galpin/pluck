@@ -1,4 +1,4 @@
-from . import client, libraries
+from . import client
 from ._pluck import create, read_graphql, Response
 
 __all__ = (
@@ -6,5 +6,4 @@ __all__ = (
     "read_graphql",
     "Response",
     "client",
-    "libraries",
 )

@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterable
+from typing import Dict, Iterable
+
+import pandas as pd
 
 __all__ = ("DataFrameLibrary", "PandasDataFrameLibrary", "Records", "DataFrame")
 
 Records = Iterable[Dict]
-DataFrame = Any
+DataFrame = pd.DataFrame
 
 
 class DataFrameLibrary(ABC):
@@ -29,6 +31,4 @@ class PandasDataFrameLibrary(DataFrameLibrary):
     """
 
     def create(self, data: Records) -> DataFrame:
-        from pandas import DataFrame
-
-        return DataFrame(data)
+        return pd.DataFrame(data)

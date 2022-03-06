@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional, List, Callable
 
 from ._execution import Executor, ExecutorOptions
 from .client import GraphQLClient, GraphQLRequest
-from .libraries import DataFrame, DataFrameLibrary
+from ._libraries import DataFrame
 
 
 Url = str
@@ -41,7 +41,6 @@ def create(
     headers: Headers = None,
     separator: str = ".",
     client: GraphQLClient = None,
-    library: DataFrameLibrary = None,
 ) -> Pluck:
     """
     Create a pluck function equivalent to `read_graphql` that is pre-configured with the specified options.
@@ -50,7 +49,6 @@ def create(
     :param headers: The HTTP headers to set when executing the query.
     :param client: An optional GqlClient instance to use for executing the query.
     :param separator: An optional separator for nested record names (the default is '.').
-    :param library: An optional data frame library to use (the default is pandas).
     :return: A Pluck function.
     """
 
@@ -62,7 +60,6 @@ def create(
             headers=headers,
             separator=separator,
             client=client,
-            library=library,
         )
 
     return pluck
@@ -76,7 +73,6 @@ def read_graphql(
     headers: Optional[Headers] = None,
     separator: str = ".",
     client: GraphQLClient = None,
-    library: DataFrameLibrary = None,
 ) -> Response:
     """
     Execute a GraphQL query and return a Response object.
@@ -87,11 +83,10 @@ def read_graphql(
     :param headers: The HTTP headers to set when executing the query.
     :param client: An optional GqlClient instance to use for executing the query.
     :param separator: An optional separator for nested record names (the default is '.').
-    :param library: An optional data frame library to use (the default is pandas).
     :return: A Response object.
     """
     request = GraphQLRequest(url, query, variables, headers)
-    options = ExecutorOptions(separator, client, library)
+    options = ExecutorOptions(separator, client)
     executor = Executor(options)
     data, errors, frames = executor.execute(request)
     return Response(data, errors, frames)
