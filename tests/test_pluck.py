@@ -68,6 +68,27 @@ def test_query_must_be_specified():
         pluck.read_graphql(None, url="http://spacex/graphql")
 
 
+def test_create():
+    expected_url = "http://spacex/graphql"
+    expected_headers = {"token": "secret"}
+
+    read_graphql = pluck.create(
+        url=expected_url,
+        headers=expected_headers,
+    )
+
+    def verify(request, _, __, ___):
+        assert request.url == expected_url
+        assert request.headers["token"] == expected_headers["token"]
+
+    _test_execute(
+        verify=verify,
+        url=expected_url,
+        headers=expected_headers,
+        read_graphql=read_graphql,
+    )
+
+
 @httpretty.activate
 def _test_execute(
     query: Optional[str] = None,
@@ -76,6 +97,7 @@ def _test_execute(
     headers: Optional[dict] = None,
     verify: Optional[Callable[[HTTPrettyRequest, dict, str, dict], None]] = None,
     url: str = "http://spacex/graphql",
+    read_graphql=None,
 ):
     query = query or "{ launch { id } }"
     variables = variables or {}
@@ -89,7 +111,11 @@ def _test_execute(
 
     httpretty.register_uri(httpretty.POST, url, body=callback)
 
-    response = pluck.read_graphql(query, variables, url=url, headers=headers)
+    if not read_graphql:
+        response = pluck.read_graphql(query, variables, url=url, headers=headers)
+    else:
+        response = read_graphql(query, variables)
+
     assert httpretty.has_request()
     assert response is not None
     return response

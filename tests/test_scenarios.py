@@ -8,7 +8,7 @@ import httpretty
 import pandas as pd
 import pytest
 
-from pluck import read_graphql
+import pluck
 
 
 @dataclass
@@ -35,7 +35,7 @@ def test_scenarios(name, scenario):
     response = json.load(scenario.response.open())
     httpretty.register_uri(httpretty.POST, url, body=json.dumps(response))
 
-    actual = read_graphql(query, url=url)
+    actual = pluck.read_graphql(query, url=url)
 
     assert actual.data == response.get("data")
     assert actual.errors == response.get("errors")
