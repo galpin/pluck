@@ -51,7 +51,7 @@ frame
 
 ### Implicit Mode
 
-The query above uses _implicit mode_. This is where the entire response is normalized into a single data-frame and the nested fields are separated by a period.
+The query above uses _implicit mode_. This is where the entire response is normalized into a single data-frame.
 
 The return value from `read_graphql` is an instance of `pluck.Response`. This object is _iterable_ and enumerates the data-frames in the query. Because this query uses _implicit mode_, the iterator contains only a single data-frame (note that the trailing comma is still required).
 
