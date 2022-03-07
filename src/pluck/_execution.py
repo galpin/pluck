@@ -15,7 +15,7 @@ from ._json import (
 )
 from ._normalization import normalize
 from ._parser import ParsedQuery, QueryParser
-from ._utils import timeit
+from ._decorators import timeit
 from .client import GraphQLClient, GraphQLRequest, GraphQLResponse, UrllibGraphQLClient
 from ._libraries import DataFrame, DataFrameLibrary, PandasDataFrameLibrary
 
