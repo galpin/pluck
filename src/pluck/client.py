@@ -1,9 +1,10 @@
 import dataclasses
-import json
 import urllib.request
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Union
+
+from ._json import JsonSerializer
 
 __all__ = ("GraphQLRequest", "GraphQLResponse", "GraphQLClient", "UrllibGraphQLClient")
 
@@ -72,6 +73,8 @@ class UrllibGraphQLClient(GraphQLClient):
     """
     A GraphQL client that uses urllib to execute requests.
     """
+    def __init__(self):
+        self._serializer = JsonSerializer.create_fastest()
 
     def execute(self, request: GraphQLRequest) -> GraphQLResponse:
         """
@@ -86,9 +89,8 @@ class UrllibGraphQLClient(GraphQLClient):
         response = self._post(request, body)
         return GraphQLResponse.from_dict(response)
 
-    @staticmethod
-    def _post(request, body, encoding="utf-8"):
-        data = json.dumps(body).encode(encoding)
+    def _post(self, request, body):
+        data = self._serializer.serialize(body, encoding="utf-8")
         headers = {"Content-Type": "application/json"}
         if request.headers:
             headers.update(request.headers)
@@ -99,4 +101,4 @@ class UrllibGraphQLClient(GraphQLClient):
             data=data,
         )
         with urllib.request.urlopen(request) as fp:
-            return json.load(fp)
+            return self._serializer.deserialize(fp)
