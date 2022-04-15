@@ -6,3 +6,5 @@ isort==5.10.1
 black==22.1.0
 build==0.7.0
 twine==3.8.0
+orjson==3.6.7
+nox==2022.1.7

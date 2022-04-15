@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import enum
+from abc import ABC, abstractmethod
 from collections import deque
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, TextIO
 
 JsonObject = Dict[str, Any]
 JsonArray = List[Any]
@@ -101,3 +102,42 @@ class JsonWalker:
     @staticmethod
     def _is_array_value(obj) -> bool:
         return isinstance(obj, list)
+
+
+class JsonSerializer(ABC):
+    @staticmethod
+    def create_fastest() -> JsonSerializer:
+        try:
+            import orjson
+            return OrJsonSerializer()
+        except ImportError:
+            import json
+            return BuiltinJsonSerializer()
+
+    @abstractmethod
+    def serialize(self, obj: JsonValue, encoding: str) -> bytes:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def deserialize(self, fp: TextIO) -> JsonValue:
+        raise NotImplementedError()
+
+
+class BuiltinJsonSerializer(JsonSerializer):
+    def serialize(self, obj: JsonValue, encoding: str) -> bytes:
+        import json
+        return json.dumps(obj).encode(encoding)
+
+    def deserialize(self, fp: TextIO) -> JsonValue:
+        import json
+        return json.load(fp)
+
+
+class OrJsonSerializer(JsonSerializer):
+    def serialize(self, obj: JsonValue, encoding: str) -> bytes:
+        import orjson
+        return orjson.dumps(obj)
+
+    def deserialize(self, fp: TextIO) -> JsonValue:
+        import orjson
+        return orjson.loads(fp.read())
