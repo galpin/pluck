@@ -20,7 +20,8 @@ class Scenario:
 
 
 def get_scenarios():
-    for file in glob.iglob("scenarios/*.graphql"):
+    root = Path(__file__).parent
+    for file in root.glob("scenarios/*.graphql"):
         query = Path(file)
         response = query.with_suffix(".json")
         expected = query.with_suffix(".expected.json")
