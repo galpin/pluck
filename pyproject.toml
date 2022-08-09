@@ -27,6 +27,7 @@ httpretty = "^1.1.4"
 isort = "^5.10.1"
 black = "^22.6.0"
 twine = "^4.0.1"
+nox-poetry = "^1.0.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -25,10 +25,7 @@ jobs:
     - name: Install dependencies
       run: poetry install --no-interaction --no-root
     - name: Test
-      run: poetry run pytest
-      working-directory: tests
-      env:
-        PYTHONPATH: ../src
+      run: poetry run nox
     - name: Build
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'
       run: poetry build
