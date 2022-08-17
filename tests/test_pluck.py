@@ -18,7 +18,7 @@ class MockGraphQLClient(GraphQLClient):
 
 
 def test_when_url():
-    expected = "http://spacex/graphql"
+    expected = "https://api.spacex.land/graphql"
 
     def verify(request, _, __, ___):
         assert request.url == expected
@@ -52,7 +52,7 @@ def test_when_custom_client():
     actual = pluck.read_graphql(
         "{ field }",
         client=client,
-        url="http://spacex/graphql",
+        url="https://api.spacex.land/graphql",
     )
 
     assert actual.data == {"field": "value"}
@@ -65,11 +65,11 @@ def test_url_must_be_specified():
 
 def test_query_must_be_specified():
     with pytest.raises(AssertionError):
-        pluck.read_graphql(None, url="http://spacex/graphql")
+        pluck.read_graphql(None, url="https://api.spacex.land/graphql")
 
 
 def test_create():
-    expected_url = "http://spacex/graphql"
+    expected_url = "https://api.spacex.land/graphql"
     expected_headers = {"token": "secret"}
 
     read_graphql = pluck.create(
@@ -96,7 +96,7 @@ def _test_execute(
     response: Optional[dict] = None,
     headers: Optional[dict] = None,
     verify: Optional[Callable[[HTTPrettyRequest, dict, str, dict], None]] = None,
-    url: str = "http://spacex/graphql",
+    url: str = "https://api.spacex.land/graphql",
     read_graphql=None,
 ):
     query = query or "{ launch { id } }"

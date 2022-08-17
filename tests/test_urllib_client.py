@@ -8,7 +8,7 @@ from pluck.client import GraphQLRequest, UrllibGraphQLClient
 
 
 def test_request_url():
-    expected = "http://spacex/graphql"
+    expected = "https://api.spacex.land/graphql"
 
     def verify(request, _, __, ___):
         assert request.url == expected
@@ -88,7 +88,7 @@ def _test_execute(
     response: Optional[dict] = None,
     headers: Optional[dict] = None,
     verify: Optional[Callable[[HTTPrettyRequest, dict, str, dict], None]] = None,
-    url: str = "http://spacex/graphql",
+    url: str = "https://api.spacex.land/graphql",
 ):
     query = query or "{ launch { id } }"
     variables = variables or {}

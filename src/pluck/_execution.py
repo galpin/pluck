@@ -19,7 +19,7 @@ from ._decorators import timeit
 from .client import GraphQLClient, GraphQLRequest, GraphQLResponse, UrllibGraphQLClient
 from ._libraries import DataFrame, DataFrameLibrary, PandasDataFrameLibrary
 
-ExecutorResult = Tuple[Dict, List, Dict[str, DataFrame]]
+ExecutorResult = Tuple[JsonValue, Optional[List], Optional[Dict[str, DataFrame]]]
 EMPTY = tuple()
 
 
@@ -46,8 +46,11 @@ class Executor:
         parsed_query = QueryParser(request.query).parse()
         new_request = request.replace(query=parsed_query.query)
         response = self._execute(new_request)
-        frame_data = self._extract(parsed_query, response)
-        frames = self._normalize(frame_data)
+        if not parsed_query.frames:
+            frames = None
+        else:
+            frame_data = self._extract(parsed_query, response)
+            frames = self._normalize(frame_data)
         return response.data, response.errors, frames
 
     @timeit
@@ -57,8 +60,6 @@ class Executor:
     @staticmethod
     @timeit
     def _extract(query: ParsedQuery, response: GraphQLResponse) -> Dict[str, JsonValue]:
-        if query.is_implicit_mode:
-            return {"default": [response.data]}
         context = FrameExtractorContext(query)
         visit(response.data, FrameExtractor(context))
         found = context.frame_data

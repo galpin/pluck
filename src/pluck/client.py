@@ -2,9 +2,9 @@ import dataclasses
 import urllib.request
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
-from ._json import JsonSerializer
+from ._json import JsonSerializer, JsonValue
 
 __all__ = ("GraphQLRequest", "GraphQLResponse", "GraphQLClient", "UrllibGraphQLClient")
 
@@ -45,7 +45,7 @@ class GraphQLResponse:
     :attr errors: The errors returned by the query.
     """
 
-    data: Union[Dict, List, int, str, bool, None]
+    data: JsonValue
     errors: Optional[Dict]
 
     @classmethod

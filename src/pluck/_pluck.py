@@ -23,13 +23,13 @@ class Response:
     Attributes
     ----------
     data: The data returned from the query.
-    errors: The errors returned from the query.
-    frames: The dictionary of data frames returned from the query.
+    errors: The optional errors returned from the query.
+    frames: The optional dictionary of data frames returned from the query.
     """
 
     data: Dict
     errors: Optional[List]
-    frames: Dict[str, DataFrame]
+    frames: Optional[Dict[str, DataFrame]]
 
     def __iter__(self):
         """

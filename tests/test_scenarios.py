@@ -1,4 +1,3 @@
-import glob
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -31,7 +30,7 @@ def get_scenarios():
 @httpretty.activate
 @pytest.mark.parametrize("name,scenario", get_scenarios())
 def test_scenarios(name, scenario):
-    url = "http://api/graphql"
+    url = "https://api.spacex.land/graphql"
     query = scenario.query.read_text()
     response = json.load(scenario.response.open())
     httpretty.register_uri(httpretty.POST, url, body=json.dumps(response))

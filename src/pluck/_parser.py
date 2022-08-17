@@ -18,10 +18,6 @@ class ParsedQuery:
     query: str
     frames: List[FrameInfo]
 
-    @property
-    def is_implicit_mode(self):
-        return not self.frames
-
     def is_frame_at(self, path: JsonPath):
         return any(f.path == path for f in self.frames)
 
