@@ -20,9 +20,11 @@ class Response:
     """
     A response from a pluck query.
 
-    :attr data: The data returned from the query.
-    :attr errors: The errors returned from the query.
-    :attr frame: The dictionary of data frames returned from the query.
+    Attributes
+    ----------
+    data: The data returned from the query.
+    errors: The errors returned from the query.
+    frames: The dictionary of data frames returned from the query.
     """
 
     data: Dict
