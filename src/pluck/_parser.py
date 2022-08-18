@@ -1,3 +1,5 @@
+# Copyright (c) 2022 Martin Galpin. See LICENSE for details.
+
 from dataclasses import dataclass
 from typing import List
 

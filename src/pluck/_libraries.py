@@ -1,3 +1,5 @@
+# Copyright (c) 2022 Martin Galpin. See LICENSE for details.
+
 from abc import ABC, abstractmethod
 from typing import Dict, Iterable
 

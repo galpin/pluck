@@ -1,3 +1,6 @@
+# Copyright (c) 2022 Martin Galpin. See LICENSE for details.
+
+
 def test_when_response_contains_data(ctx):
     expected_data = {"launches": [{"id": "1"}]}
     ctx.setup_response(data=expected_data)

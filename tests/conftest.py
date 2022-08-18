@@ -1,3 +1,5 @@
+# Copyright (c) 2022 Martin Galpin. See LICENSE for details.
+
 import json
 from dataclasses import dataclass
 from typing import Dict, Optional

@@ -1,3 +1,5 @@
+# Copyright (c) 2022 Martin Galpin. See LICENSE for details.
+
 import dataclasses
 import urllib.request
 from abc import ABC, abstractmethod

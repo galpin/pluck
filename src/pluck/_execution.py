@@ -1,3 +1,5 @@
+# Copyright (c) 2022 Martin Galpin. See LICENSE for details.
+
 import itertools
 from collections import defaultdict
 from dataclasses import dataclass, field
