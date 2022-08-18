@@ -14,7 +14,7 @@ Url = str
 Headers = Optional[Dict[str, Any]]
 Query = str
 Variables = Optional[Dict[str, Any]]
-Pluck = Callable[[str, Variables], "Response"]
+Pluck = Callable[[str, Variables], "PluckResponse"]
 
 
 class PluckResponse:
