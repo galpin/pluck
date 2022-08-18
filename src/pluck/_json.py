@@ -109,9 +109,11 @@ class JsonSerializer(ABC):
     def create_fastest() -> JsonSerializer:
         try:
             import orjson
+
             return OrJsonSerializer()
         except ImportError:
             import json
+
             return BuiltinJsonSerializer()
 
     @abstractmethod
@@ -126,18 +128,22 @@ class JsonSerializer(ABC):
 class BuiltinJsonSerializer(JsonSerializer):
     def serialize(self, obj: JsonValue, encoding: str) -> bytes:
         import json
+
         return json.dumps(obj).encode(encoding)
 
     def deserialize(self, fp: TextIO) -> JsonValue:
         import json
+
         return json.load(fp)
 
 
 class OrJsonSerializer(JsonSerializer):
     def serialize(self, obj: JsonValue, encoding: str) -> bytes:
         import orjson
+
         return orjson.dumps(obj)
 
     def deserialize(self, fp: TextIO) -> JsonValue:
         import orjson
+
         return orjson.loads(fp.read())

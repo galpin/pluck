@@ -80,6 +80,7 @@ class UrllibGraphQLClient(GraphQLClient):
     """
     A GraphQL client that uses urllib to execute requests.
     """
+
     def __init__(self):
         self._serializer = JsonSerializer.create_fastest()
 
