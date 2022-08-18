@@ -7,8 +7,6 @@ from typing import Any, Dict, Optional
 from ._errors import PluckError
 from ._json import JsonSerializer, JsonValue
 
-__all__ = ("GraphQLRequest", "GraphQLResponse", "GraphQLClient", "UrllibGraphQLClient")
-
 
 @dataclass(frozen=True)
 class GraphQLRequest:
@@ -111,3 +109,11 @@ class UrllibGraphQLClient(GraphQLClient):
         )
         with urllib.request.urlopen(request) as fp:
             return self._serializer.deserialize(fp)
+
+
+__all__ = [
+    "GraphQLRequest",
+    "GraphQLResponse",
+    "GraphQLClient",
+    "UrllibGraphQLClient",
+]

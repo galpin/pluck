@@ -13,11 +13,11 @@ from ._json import (
     JsonVisitor,
     visit,
 )
-from ._client import GraphQLClient, GraphQLRequest, GraphQLResponse, UrllibGraphQLClient
 from ._normalization import normalize
 from ._parser import ParsedQuery, QueryParser
 from ._decorators import timeit
 from ._libraries import DataFrame, DataFrameLibrary, PandasDataFrameLibrary
+from .client import GraphQLClient, GraphQLRequest, GraphQLResponse, UrllibGraphQLClient
 
 ExecutorResult = Tuple[JsonValue, Optional[List], Optional[Dict[str, DataFrame]]]
 EMPTY = tuple()

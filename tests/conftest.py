@@ -7,7 +7,7 @@ import pytest
 from httpretty.core import HTTPrettyRequest
 
 import pluck
-from pluck._client import GraphQLClient, GraphQLResponse, GraphQLRequest
+from pluck.client import GraphQLClient, GraphQLResponse, GraphQLRequest
 
 
 @pytest.fixture
