@@ -5,6 +5,7 @@ from __future__ import annotations
 import functools
 from typing import Any, Callable, Dict, List, Optional
 
+from . import PluckError
 from ._execution import Executor, ExecutorOptions
 from ._libraries import DataFrame
 from .client import GraphQLClient, GraphQLRequest
@@ -38,6 +39,13 @@ class PluckResponse:
         self.data = data
         self.errors = errors
         self.frames = frames
+
+    def raise_for_errors(self):
+        """
+        :raises PluckError: If the response contains errors.
+        """
+        if self.errors:
+            raise PluckError.from_errors(self.errors)
 
     def __iter__(self):
         """
