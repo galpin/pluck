@@ -55,9 +55,6 @@ class TestContext:
     def setup_empty_response(self):
         self.setup_response(data={})
 
-    def setup_sut(self, sut):
-        self.sut = sut
-
     def last_request(self) -> HTTPrettyRequest:
         return httpretty.last_request()
 
