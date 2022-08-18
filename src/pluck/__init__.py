@@ -2,7 +2,7 @@
 
 from . import client
 from ._errors import PluckError, GraphQLError, HTTPError, HTTPStatusError
-from ._pluck import PluckResponse, create, read_graphql
+from ._pluck import Response, create, read_graphql
 
 __all__ = [
     "client",
@@ -11,6 +11,6 @@ __all__ = [
     "HTTPError",
     "HTTPStatusError",
     "PluckError",
-    "PluckResponse",
+    "Response",
     "read_graphql",
 ]

@@ -14,10 +14,10 @@ Url = str
 Headers = Optional[Dict[str, Any]]
 Query = str
 Variables = Optional[Dict[str, Any]]
-Pluck = Callable[[str, Variables], "PluckResponse"]
+Pluck = Callable[[str, Variables], "Response"]
 
 
-class PluckResponse:
+class Response:
     """
     Contains a response from a Pluck GraphQL query.
     """
@@ -29,7 +29,7 @@ class PluckResponse:
         frames: Dict[str, DataFrame],
     ):
         """
-        Create a new PluckResponse.
+        Create a new Response.
 
         :param data: The optional data returned from the query.
         :param errors: The optional errors returned from the query.
@@ -109,9 +109,9 @@ def read_graphql(
     headers: Headers = None,
     separator: str = ".",
     client: GraphQLClient = None,
-) -> PluckResponse:
+) -> Response:
     """
-    Execute a GraphQL query and return a PluckResponse object.
+    Execute a GraphQL query and return a Response object.
 
     :param query: The GraphQL query to execute.
     :param variables: The optional dictionary of variables to pass to the query.
@@ -119,12 +119,12 @@ def read_graphql(
     :param headers: The HTTP headers to set when executing the query.
     :param client: The optional GqlClient instance to use for executing the query.
     :param separator: The optional separator for nested record names (the default is '.').
-    :return: A PluckResponse object.
-    :rtype: PluckResponse
+    :return: A Response object.
+    :rtype: Response
     :raises PluckError: Occurs when the query execution failed or an HTTP error is encountered.
     """
     request = GraphQLRequest(url, query, variables, headers)
     options = ExecutorOptions(separator, client)
     executor = Executor(options)
-    response = PluckResponse(*executor.execute(request))
+    response = Response(*executor.execute(request))
     return response

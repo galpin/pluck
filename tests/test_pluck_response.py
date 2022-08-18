@@ -3,7 +3,7 @@
 import pytest
 from pandas import DataFrame
 
-from pluck import PluckResponse, GraphQLError
+from pluck import Response, GraphQLError
 
 
 def test_init():
@@ -11,7 +11,7 @@ def test_init():
     expected_errors = ["Error 1"]
     expected_frames = {"launch": DataFrame({"id": ["1"]})}
 
-    sut = PluckResponse(
+    sut = Response(
         data=expected_data,
         errors=expected_errors,
         frames=expected_frames,
@@ -25,7 +25,7 @@ def test_init():
 def test_init_when_frameless():
     expected_frames = {}
 
-    sut = PluckResponse(data=None, errors=None, frames=expected_frames)
+    sut = Response(data=None, errors=None, frames=expected_frames)
 
     assert sut.data is None
     assert sut.errors is None
@@ -44,7 +44,7 @@ def test_raise_for_errors():
         "- Error 2\n"
         "- Error 3"
     )
-    sut = PluckResponse(data=None, errors=errors, frames={})
+    sut = Response(data=None, errors=errors, frames={})
 
     with pytest.raises(GraphQLError) as excinfo:
         sut.raise_for_errors()
@@ -57,7 +57,7 @@ def test_iter_returns_frames():
         "launch": DataFrame({"id": ["1"]}),
         "mission": DataFrame({"id": ["2"]}),
     }
-    sut = PluckResponse(data=None, errors=None, frames=frames)
+    sut = Response(data=None, errors=None, frames=frames)
 
     actual = iter(sut)
 
@@ -68,6 +68,6 @@ def test_iter_returns_frames():
 
 
 def test_iter_when_query_was_frameless():
-    sut = PluckResponse(data=None, errors=None, frames={})
+    sut = Response(data=None, errors=None, frames={})
     with pytest.raises(AssertionError):
         iter(sut)
