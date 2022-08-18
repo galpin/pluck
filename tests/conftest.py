@@ -1,13 +1,13 @@
 import json
 from dataclasses import dataclass
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 import httpretty
 import pytest
 from httpretty.core import HTTPrettyRequest
 
 import pluck
-from pluck.client import GraphQLClient, GraphQLResponse, GraphQLRequest
+from pluck.client import GraphQLClient, GraphQLRequest, GraphQLResponse
 
 
 @pytest.fixture

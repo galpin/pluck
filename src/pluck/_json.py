@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 from abc import ABC, abstractmethod
 from collections import deque
-from typing import Any, Dict, List, Optional, Union, TextIO
+from typing import Any, Dict, List, Optional, TextIO, Union
 
 JsonObject = Dict[str, Any]
 JsonArray = List[Any]

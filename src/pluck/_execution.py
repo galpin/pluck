@@ -3,6 +3,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
+from ._decorators import timeit
 from ._json import (
     STOP,
     JsonArray,
@@ -13,10 +14,9 @@ from ._json import (
     JsonVisitor,
     visit,
 )
+from ._libraries import DataFrame, DataFrameLibrary, PandasDataFrameLibrary
 from ._normalization import normalize
 from ._parser import ParsedQuery, QueryParser
-from ._decorators import timeit
-from ._libraries import DataFrame, DataFrameLibrary, PandasDataFrameLibrary
 from .client import GraphQLClient, GraphQLRequest, GraphQLResponse, UrllibGraphQLClient
 
 ExecutorResult = Tuple[JsonValue, Optional[List], Optional[Dict[str, DataFrame]]]
