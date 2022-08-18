@@ -26,19 +26,36 @@ class PluckResponse:
     :param frames: The optional dictionary of data frames returned from the query.
     """
 
-    data: Optional[Dict]
-    errors: Optional[List]
-    frames: Optional[Dict[str, DataFrame]]
-
     def __init__(
         self,
         data: Optional[Dict],
         errors: Optional[List],
         frames: Optional[Dict[str, DataFrame]],
     ):
-        self.data = data
-        self.errors = errors
-        self.frames = frames
+        self._data = data
+        self._errors = errors
+        self._frames = frames
+
+    @property
+    def data(self) -> Optional[Dict]:
+        """
+        :returns: The optional data returned from the query.
+        """
+        return self._data
+
+    @property
+    def errors(self) -> Optional[List]:
+        """
+        :returns: The optional errors returned from the query.
+        """
+        return self._errors
+
+    @property
+    def frames(self) -> Optional[Dict[str, DataFrame]]:
+        """
+        :returns: The optional dictionary of data frames returned from the query.
+        """
+        return self._frames
 
     def raise_for_errors(self):
         """
