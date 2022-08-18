@@ -27,6 +27,9 @@ class HttpResponse:
         return cls(status=200, body=None, headers=None)
 
 
+_NONE = object()
+
+
 class TestContext:
     response: HttpResponse
 
@@ -35,8 +38,16 @@ class TestContext:
         self.sut = pluck.read_graphql
         self.setup_empty_response()
 
-    def setup_response(self, data=None, errors=None, status=200, headers=None):
-        body = self._build_body(data, errors)
+    def setup_response(
+        self,
+        data=None,
+        errors=None,
+        body=_NONE,
+        status=200,
+        headers=None,
+    ):
+        if body is _NONE:
+            body = self._build_body(data, errors)
         self.response = HttpResponse(status, body, headers)
 
     def setup_empty_response(self):

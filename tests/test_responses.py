@@ -47,3 +47,12 @@ def test_when_contains_no_data_and_no_errors(ctx):
         ctx.read_graphql(
             query="{ launches { id } }",
         )
+
+
+def test_when_body_is_null(ctx):
+    ctx.setup_response(body=None)
+
+    with pytest.raises(PluckError):
+        ctx.read_graphql(
+            query="{ launches { id } }",
+        )

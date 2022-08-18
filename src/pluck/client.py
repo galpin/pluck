@@ -52,11 +52,13 @@ class GraphQLResponse:
     errors: Optional[Dict]
 
     @classmethod
-    def from_dict(cls, response: Dict) -> "GraphQLResponse":
-        data = response.get("data")
-        errors = response.get("errors")
+    def from_dict(cls, body: Dict) -> "GraphQLResponse":
+        if body is None:
+            raise PluckError("Response is null.")
+        data = body.get("data")
+        errors = body.get("errors")
         if data is None and errors is None:
-            raise PluckError("The response contains neither data nor errors.")
+            raise PluckError("Response contains neither data nor errors.")
         return cls(data, errors)
 
 
