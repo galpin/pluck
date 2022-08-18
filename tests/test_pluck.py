@@ -89,6 +89,28 @@ def test_create():
     )
 
 
+def test_when_query_does_not_contain_any_frames(ctx):
+    query = """
+    {
+      launches {
+        id
+        mission_name
+        rocket {
+          rocket_name
+        }
+      }
+    }
+    """
+    expected_data = {"launches": [{"id": "1"}]}
+    ctx.setup_response(data=expected_data)
+
+    actual = ctx.read_graphql(query)
+
+    assert actual.data == expected_data
+    assert actual.frames is None
+    assert actual.errors is None
+
+
 @httpretty.activate
 def _test_execute(
     query: Optional[str] = None,
