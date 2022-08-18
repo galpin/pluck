@@ -8,5 +8,3 @@ class PluckError(Exception):
 
     pass
 
-
-__all__ = ["PluckError"]
