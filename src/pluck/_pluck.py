@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import functools
-from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 
 from ._execution import Executor, ExecutorOptions
@@ -17,26 +16,34 @@ Variables = Optional[Dict[str, Any]]
 Pluck = Callable[[str, Variables], "Response"]
 
 
-@dataclass(frozen=True)
 class PluckResponse:
     """
     A response from a pluck query.
 
-    Attributes
-    ----------
-    data: The optional data returned from the query.
-    errors: The optional errors returned from the query.
-    frames: The optional dictionary of data frames returned from the query.
+    :param data: The optional data returned from the query.
+    :param errors: The optional errors returned from the query.
+    :param frames: The optional dictionary of data frames returned from the query.
     """
 
     data: Optional[Dict]
     errors: Optional[List]
     frames: Optional[Dict[str, DataFrame]]
 
+    def __init__(
+        self,
+        data: Optional[Dict],
+        errors: Optional[List],
+        frames: Optional[Dict[str, DataFrame]],
+    ):
+        self.data = data
+        self.errors = errors
+        self.frames = frames
+
     def __iter__(self):
         """
         Iterate over the data frames.
         """
+        assert self.frames is not None, "No data frames were returned."
         return self.frames.values().__iter__()
 
 
