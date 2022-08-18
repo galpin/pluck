@@ -34,7 +34,7 @@ class PluckResponse:
     ):
         self._data = data
         self._errors = errors
-        self._frames = frames
+        self._frames = frames or {}
 
     @property
     def data(self) -> Optional[Dict]:
@@ -51,9 +51,10 @@ class PluckResponse:
         return self._errors
 
     @property
-    def frames(self) -> Optional[Dict[str, DataFrame]]:
+    def frames(self) -> Dict[str, DataFrame]:
         """
-        :returns: The optional dictionary of data frames returned from the query.
+        :returns: The dictionary of data frames returned from the query. If the query was frameless,
+                  this will be an empty dict.
         """
         return self._frames
 
@@ -68,7 +69,7 @@ class PluckResponse:
         """
         Iterate over the data frames.
         """
-        assert self.frames is not None, "No data frames were returned."
+        assert self.frames, "No data frames were returned."
         return self.frames.values().__iter__()
 
 
