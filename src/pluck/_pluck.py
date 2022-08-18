@@ -19,11 +19,7 @@ Pluck = Callable[[str, Variables], "Response"]
 
 class PluckResponse:
     """
-    A response from a pluck query.
-
-    :param data: The optional data returned from the query.
-    :param errors: The optional errors returned from the query.
-    :param frames: The optional dictionary of data frames returned from the query.
+    Contains a response from a Pluck GraphQL query.
     """
 
     def __init__(
@@ -61,8 +57,8 @@ class PluckResponse:
     @property
     def frames(self) -> Dict[str, DataFrame]:
         """
-        :returns: The dictionary of data frames returned from the query. If the query was frameless,
-                  this will be an empty dict.
+        :returns: The dictionary of data-frames returned from the query. If the
+                  query was frameless, this will be an empty dict.
         """
         return self._frames
 
@@ -94,7 +90,7 @@ def create(
     :param headers: The HTTP headers to set when executing the query.
     :param client: The optional GqlClient instance to use for executing the query.
     :param separator: The optional separator for nested record names (the default is '.').
-    :return: A Pluck function.
+    :return: A function equivalent to `read_graphql` that can be used to execute a GraphQL query.
     """
     return functools.partial(
         read_graphql,
@@ -115,7 +111,7 @@ def read_graphql(
     client: GraphQLClient = None,
 ) -> PluckResponse:
     """
-    Execute a GraphQL query and return a Response object.
+    Execute a GraphQL query and return a PluckResponse object.
 
     :param query: The GraphQL query to execute.
     :param variables: The optional dictionary of variables to pass to the query.
@@ -123,7 +119,7 @@ def read_graphql(
     :param headers: The HTTP headers to set when executing the query.
     :param client: The optional GqlClient instance to use for executing the query.
     :param separator: The optional separator for nested record names (the default is '.').
-    :return: A Response object.
+    :return: A PluckResponse object.
     :rtype: PluckResponse
     :raises PluckError: Occurs when the query execution failed or an HTTP error is encountered.
     """
