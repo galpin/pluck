@@ -4,8 +4,10 @@ from typing import Optional, Dict
 
 import httpretty
 import pytest
+from httpretty.core import HTTPrettyRequest
 
 import pluck
+from pluck._client import GraphQLClient, GraphQLResponse, GraphQLRequest
 
 
 @pytest.fixture
@@ -31,13 +33,20 @@ class TestContext:
     def __init__(self):
         self.response = HttpResponse.success()
         self.sut = pluck.read_graphql
+        self.setup_empty_response()
 
     def setup_response(self, data=None, errors=None, status=200, headers=None):
         body = self._build_body(data, errors)
         self.response = HttpResponse(status, body, headers)
 
+    def setup_empty_response(self):
+        self.setup_response(data={})
+
     def setup_sut(self, sut):
         self.sut = sut
+
+    def last_request(self) -> HTTPrettyRequest:
+        return httpretty.last_request()
 
     def read_graphql(
         self,
@@ -73,3 +82,11 @@ class TestContext:
         if errors is not None:
             body["errors"] = errors
         return body
+
+
+class StubGraphQLClient(GraphQLClient):
+    def __init__(self, body: Dict):
+        self.response = GraphQLResponse.from_dict(body)
+
+    def execute(self, request: GraphQLRequest) -> GraphQLResponse:
+        return self.response

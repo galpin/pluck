@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
+from ._errors import PluckError
 from ._json import JsonSerializer, JsonValue
 
 __all__ = ("GraphQLRequest", "GraphQLResponse", "GraphQLClient", "UrllibGraphQLClient")
@@ -50,7 +51,11 @@ class GraphQLResponse:
 
     @classmethod
     def from_dict(cls, response: Dict) -> "GraphQLResponse":
-        return cls(response.get("data"), response.get("errors"))
+        data = response.get("data")
+        errors = response.get("errors")
+        if data is None and errors is None:
+            raise PluckError("The response contains neither data nor errors.")
+        return cls(data, errors)
 
 
 class GraphQLClient(ABC):

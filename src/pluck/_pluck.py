@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, List, Callable
 
+from ._client import GraphQLClient, GraphQLRequest
 from ._execution import Executor, ExecutorOptions
-from .client import GraphQLClient, GraphQLRequest
 from ._libraries import DataFrame
 
 

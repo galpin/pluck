@@ -3,11 +3,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict
 
-import httpretty
 import pandas as pd
 import pytest
-
-import pluck
 
 
 @dataclass
@@ -27,15 +24,13 @@ def get_scenarios():
         yield query.name, Scenario(query.name, query, response, expected)
 
 
-@httpretty.activate
 @pytest.mark.parametrize("name,scenario", get_scenarios())
-def test_scenarios(name, scenario):
-    url = "https://api.spacex.land/graphql"
+def test_scenarios(ctx, name, scenario):
     query = scenario.query.read_text()
     response = json.load(scenario.response.open())
-    httpretty.register_uri(httpretty.POST, url, body=json.dumps(response))
+    ctx.setup_response(**response)
 
-    actual = pluck.read_graphql(query, url=url)
+    actual = ctx.read_graphql(query)
 
     assert actual.data == response.get("data")
     assert actual.errors == response.get("errors")
