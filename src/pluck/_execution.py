@@ -49,7 +49,7 @@ class Executor:
         new_request = request.replace(query=parsed_query.query)
         response = self._execute(new_request)
         if not parsed_query.frames:
-            frames = None
+            frames = {}
         else:
             frame_data = self._extract(parsed_query, response)
             frames = self._normalize(frame_data)

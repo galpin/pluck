@@ -30,11 +30,19 @@ class PluckResponse:
         self,
         data: Optional[Dict],
         errors: Optional[List],
-        frames: Optional[Dict[str, DataFrame]],
+        frames: Dict[str, DataFrame],
     ):
+        """
+        Create a new PluckResponse.
+
+        :param data: The optional data returned from the query.
+        :param errors: The optional errors returned from the query.
+        :param frames: The dictionary of data-frames returned from the query.
+        """
+        assert frames is not None
         self._data = data
         self._errors = errors
-        self._frames = frames or {}
+        self._frames = frames
 
     @property
     def data(self) -> Optional[Dict]:

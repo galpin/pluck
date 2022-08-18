@@ -21,7 +21,7 @@ def test_create_delegates_to_read_graphql(monkeypatch):
     }
     expected_separator = "!"
     expected_client = StubGraphQLClient({"data": {}})
-    expected_response = PluckResponse({}, None, None)
+    expected_response = PluckResponse({}, None, {})
     actual_args = []
     actual_kwargs = {}
 

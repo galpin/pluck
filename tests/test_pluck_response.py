@@ -23,11 +23,13 @@ def test_init():
 
 
 def test_init_when_frameless():
-    sut = PluckResponse(data=None, errors=None, frames=None)
+    expected_frames = {}
+
+    sut = PluckResponse(data=None, errors=None, frames=expected_frames)
 
     assert sut.data is None
     assert sut.errors is None
-    assert sut.frames == {}
+    assert sut.frames is expected_frames
 
 
 def test_raise_for_errors():
@@ -42,7 +44,7 @@ def test_raise_for_errors():
         "- Error 2\n"
         "- Error 3"
     )
-    sut = PluckResponse(data=None, errors=errors, frames=None)
+    sut = PluckResponse(data=None, errors=errors, frames={})
 
     with pytest.raises(PluckError) as excinfo:
         sut.raise_for_errors()
@@ -66,6 +68,6 @@ def test_iter_returns_frames():
 
 
 def test_iter_when_query_was_frameless():
-    sut = PluckResponse(data=None, errors=None, frames=None)
+    sut = PluckResponse(data=None, errors=None, frames={})
     with pytest.raises(AssertionError):
         iter(sut)
