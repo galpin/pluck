@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 
@@ -23,12 +24,12 @@ class Response:
 
     Attributes
     ----------
-    data: The data returned from the query.
+    data: The optional data returned from the query.
     errors: The optional errors returned from the query.
     frames: The optional dictionary of data frames returned from the query.
     """
 
-    data: Dict
+    data: Optional[Dict]
     errors: Optional[List]
     frames: Optional[Dict[str, DataFrame]]
 
@@ -46,7 +47,7 @@ def create(
     client: GraphQLClient = None,
 ) -> Pluck:
     """
-    Create a pluck function equivalent to `read_graphql` that is pre-configured with the specified options.
+    Create a partial function equivalent to `read_graphql` with the specified options.
 
     :param url: The GraphQL URL against which to execute the query.
     :param headers: The HTTP headers to set when executing the query.
@@ -54,18 +55,13 @@ def create(
     :param separator: An optional separator for nested record names (the default is '.').
     :return: A Pluck function.
     """
-
-    def pluck(query: Query, variables: Variables = None) -> Response:
-        return read_graphql(
-            query,
-            variables,
-            url=url,
-            headers=headers,
-            separator=separator,
-            client=client,
-        )
-
-    return pluck
+    return functools.partial(
+        read_graphql,
+        url=url,
+        headers=headers,
+        separator=separator,
+        client=client,
+    )
 
 
 def read_graphql(
