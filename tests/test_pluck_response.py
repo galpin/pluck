@@ -3,7 +3,7 @@
 import pytest
 from pandas import DataFrame
 
-from pluck import PluckResponse, PluckError
+from pluck import PluckResponse, GraphQLError
 
 
 def test_init():
@@ -46,7 +46,7 @@ def test_raise_for_errors():
     )
     sut = PluckResponse(data=None, errors=errors, frames={})
 
-    with pytest.raises(PluckError) as excinfo:
+    with pytest.raises(GraphQLError) as excinfo:
         sut.raise_for_errors()
 
     assert str(excinfo.value) == expected

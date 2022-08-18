@@ -20,13 +20,13 @@ def ctx():
 
 @dataclass(frozen=True)
 class HttpResponse:
-    status: int
+    status_code: int
     body: Optional[Dict]
     headers: Optional[Dict]
 
     @classmethod
     def success(cls):
-        return cls(status=200, body=None, headers=None)
+        return cls(status_code=200, body=None, headers=None)
 
 
 _NONE = object()
@@ -45,12 +45,12 @@ class TestContext:
         data=None,
         errors=None,
         body=_NONE,
-        status=200,
+        status_code=200,
         headers=None,
     ):
         if body is _NONE:
             body = self._build_body(data, errors)
-        self.response = HttpResponse(status, body, headers)
+        self.response = HttpResponse(status_code, body, headers)
 
     def setup_empty_response(self):
         self.setup_response(data={})
@@ -73,7 +73,7 @@ class TestContext:
             httpretty.POST,
             url,
             body=json.dumps(self.response.body),
-            status=self.response.status,
+            status=self.response.status_code,
         )
 
         actual = self.sut(

@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from ._errors import PluckError
+from ._errors import PluckError, HTTPStatusError
 from ._json import JsonSerializer, JsonValue
 
 
@@ -119,7 +119,9 @@ class UrllibGraphQLClient(GraphQLClient):
             with urllib.request.urlopen(request) as fp:
                 return self._serializer.deserialize(fp)
         except urllib.error.HTTPError as error:
-            raise PluckError(f"HTTP error: code={error.code}.") from error
+            raise HTTPStatusError(code=error.code) from error
+        except Exception as error:
+            raise PluckError from error
 
 
 __all__ = [

@@ -5,7 +5,7 @@ import json
 import pandas as pd
 import pytest
 
-from pluck import PluckError
+from pluck import HTTPStatusError
 from .conftest import StubGraphQLClient
 
 
@@ -117,11 +117,13 @@ def test_when_url_is_none(ctx):
         )
 
 
-@pytest.mark.parametrize("status", [400, 500])
-def test_when_http_status_is_non_2xx(ctx, status):
-    ctx.setup_response(status=status)
+@pytest.mark.parametrize("status_code", [400, 500])
+def test_when_http_status_is_non_2xx(ctx, status_code):
+    ctx.setup_response(status_code=status_code)
 
-    with pytest.raises(PluckError):
+    with pytest.raises(HTTPStatusError) as excinfo:
         ctx.read_graphql(
             query="{ launches { id } }",
         )
+
+    assert excinfo.value.code == status_code

@@ -8,9 +8,29 @@ from ._json import JsonValue
 
 
 class PluckError(Exception):
-    """
-    Raised when an error is encountered while executing a GraphQL request.
-    """
+    """Raised when an error occurs executing a GraphQL request."""
+
+    pass
+
+
+class HTTPError(PluckError):
+    """Raised when an HTTP error occurs executing a GraphQL request."""
+
+    pass
+
+
+class HTTPStatusError(PluckError):
+    """Raised when an HTTP response had an error status (4xx or 5xx)."""
+
+    def __init__(
+        self, *, code: int
+    ) -> None:
+        super().__init__(f"HTTP status {code}")
+        self.code = code
+
+
+class GraphQLError(PluckError):
+    """Raised when an error occurs executing a GraphQL request."""
 
     @classmethod
     def from_errors(cls, errors: List[JsonValue]) -> PluckError:
