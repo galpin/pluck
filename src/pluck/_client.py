@@ -15,10 +15,12 @@ class GraphQLRequest:
     """
     A GraphQL request.
 
-    :attr url: The GraphQL URL against which to execute the query.
-    :attr query: The GraphQL query.
-    :attr variables: The optional variables for the query.
-    :attr headers: The optional headers for the request.
+    Attributes
+    ----------
+    url: The GraphQL URL against which to execute the query.
+    query: The GraphQL query.
+    variables: The optional variables for the query.
+    headers: The optional headers for the request.
     """
 
     url: str
@@ -32,7 +34,7 @@ class GraphQLRequest:
 
     def replace(self, *, query: str) -> "GraphQLRequest":
         """
-        Returns a new GraphQLRequest with the given query.
+        :returns: A new GraphQLRequest with the given query.
         """
         return dataclasses.replace(self, query=query)
 
@@ -42,8 +44,10 @@ class GraphQLResponse:
     """
     A GraphQL response.
 
-    :attr data: The data returned by the query.
-    :attr errors: The errors returned by the query.
+    Attributes
+    ----------
+    data: The data returned by the query.
+    errors: The errors returned by the query.
     """
 
     data: JsonValue
