@@ -1,7 +1,7 @@
 # Copyright (c) 2022 Martin Galpin. See LICENSE for details.
 
 import pluck
-from pluck import Response
+from pluck import PluckResponse
 from .conftest import StubGraphQLClient
 
 
@@ -21,7 +21,7 @@ def test_create_delegates_to_read_graphql(monkeypatch):
     }
     expected_separator = "!"
     expected_client = StubGraphQLClient({"data": {}})
-    expected_response = Response({}, None, None)
+    expected_response = PluckResponse({}, None, None)
     actual_args = []
     actual_kwargs = {}
 

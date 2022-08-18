@@ -18,7 +18,7 @@ Pluck = Callable[[str, Variables], "Response"]
 
 
 @dataclass(frozen=True)
-class Response:
+class PluckResponse:
     """
     A response from a pluck query.
 
@@ -72,7 +72,7 @@ def read_graphql(
     headers: Headers = None,
     separator: str = ".",
     client: GraphQLClient = None,
-) -> Response:
+) -> PluckResponse:
     """
     Execute a GraphQL query and return a Response object.
 
@@ -88,4 +88,4 @@ def read_graphql(
     options = ExecutorOptions(separator, client)
     executor = Executor(options)
     data, errors, frames = executor.execute(request)
-    return Response(data, errors, frames)
+    return PluckResponse(data, errors, frames)

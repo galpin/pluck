@@ -2,12 +2,12 @@
 
 from . import client
 from ._errors import PluckError
-from ._pluck import Response, create, read_graphql
+from ._pluck import PluckResponse, create, read_graphql
 
 __all__ = [
     "client",
     "PluckError",
-    "Response",
+    "PluckResponse",
     "create",
     "read_graphql",
 ]
