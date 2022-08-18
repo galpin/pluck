@@ -2,6 +2,7 @@
 
 import dataclasses
 import urllib.request
+import urllib.error
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
@@ -85,6 +86,8 @@ class UrllibGraphQLClient(GraphQLClient):
     A GraphQL client that uses urllib to execute requests.
     """
 
+    headers = {"Content-Type": "application/json"}
+
     def __init__(self):
         self._serializer = JsonSerializer.create_fastest()
 
@@ -103,7 +106,7 @@ class UrllibGraphQLClient(GraphQLClient):
 
     def _post(self, request, body):
         data = self._serializer.serialize(body, encoding="utf-8")
-        headers = {"Content-Type": "application/json"}
+        headers = self.headers.copy()
         if request.headers:
             headers.update(request.headers)
         request = urllib.request.Request(
@@ -112,8 +115,11 @@ class UrllibGraphQLClient(GraphQLClient):
             headers=headers,
             data=data,
         )
-        with urllib.request.urlopen(request) as fp:
-            return self._serializer.deserialize(fp)
+        try:
+            with urllib.request.urlopen(request) as fp:
+                return self._serializer.deserialize(fp)
+        except urllib.error.HTTPError as error:
+            raise PluckError(f"HTTP error: code={error.code}.") from error
 
 
 __all__ = [

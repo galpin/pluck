@@ -7,4 +7,3 @@ class PluckError(Exception):
     """
 
     pass
-

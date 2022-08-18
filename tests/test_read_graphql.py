@@ -5,6 +5,7 @@ import json
 import pandas as pd
 import pytest
 
+from pluck import PluckError
 from .conftest import StubGraphQLClient
 
 
@@ -113,4 +114,14 @@ def test_when_url_is_none(ctx):
         ctx.read_graphql(
             query="{ launches { id } }",
             url=None,
+        )
+
+
+@pytest.mark.parametrize("status", [400, 500])
+def test_when_http_status_is_non_2xx(ctx, status):
+    ctx.setup_response(status=status)
+
+    with pytest.raises(PluckError):
+        ctx.read_graphql(
+            query="{ launches { id } }",
         )

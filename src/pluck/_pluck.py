@@ -58,8 +58,8 @@ def create(
 
     :param url: The GraphQL URL against which to execute the query.
     :param headers: The HTTP headers to set when executing the query.
-    :param client: An optional GqlClient instance to use for executing the query.
-    :param separator: An optional separator for nested record names (the default is '.').
+    :param client: The optional GqlClient instance to use for executing the query.
+    :param separator: The optional separator for nested record names (the default is '.').
     :return: A Pluck function.
     """
     return functools.partial(
@@ -87,12 +87,14 @@ def read_graphql(
     :param variables: The optional dictionary of variables to pass to the query.
     :param url: The GraphQL URL against which to execute the query.
     :param headers: The HTTP headers to set when executing the query.
-    :param client: An optional GqlClient instance to use for executing the query.
-    :param separator: An optional separator for nested record names (the default is '.').
+    :param client: The optional GqlClient instance to use for executing the query.
+    :param separator: The optional separator for nested record names (the default is '.').
     :return: A Response object.
+    :rtype: PluckResponse
+    :raises PluckError: Occurs when the query execution failed or an HTTP error is encountered.
     """
     request = GraphQLRequest(url, query, variables, headers)
     options = ExecutorOptions(separator, client)
     executor = Executor(options)
-    data, errors, frames = executor.execute(request)
-    return PluckResponse(data, errors, frames)
+    response = PluckResponse(*executor.execute(request))
+    return response
