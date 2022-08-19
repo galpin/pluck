@@ -22,8 +22,8 @@ class Response:
     Contains a response from a GraphQL server.
 
     This object contains the :meth:`data` and :meth:`error` fields from the
-    response plus any data-frames  (``frames``) that have been plucked from the
-    result.
+    response plus any data-frames  (:meth:`frames`) that have been plucked from
+    the result.
 
     :meth:`frames` is a dictionary whose keys are correspond to either the name
     of the field on which the ``@frame`` directive was placed, or as specified
