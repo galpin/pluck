@@ -13,17 +13,6 @@ from ._json import JsonSerializer, JsonValue
 
 @dataclass(frozen=True)
 class GraphQLRequest:
-    """
-    A GraphQL request.
-
-    Attributes
-    ----------
-    url: The GraphQL URL against which to execute the query.
-    query: The GraphQL query.
-    variables: The optional variables for the query.
-    headers: The optional headers for the request.
-    """
-
     url: str
     query: str
     variables: Optional[Dict[str, Any]] = None
@@ -34,23 +23,11 @@ class GraphQLRequest:
         assert self.query, "query must be specified."
 
     def replace(self, *, query: str) -> "GraphQLRequest":
-        """
-        :returns: A new GraphQLRequest with the given query.
-        """
         return dataclasses.replace(self, query=query)
 
 
 @dataclass(frozen=True)
 class GraphQLResponse:
-    """
-    A GraphQL response.
-
-    Attributes
-    ----------
-    data: The data returned by the query.
-    errors: The errors returned by the query.
-    """
-
     data: JsonValue
     errors: Optional[Dict]
 
@@ -66,38 +43,18 @@ class GraphQLResponse:
 
 
 class GraphQLClient(ABC):
-    """
-    A GraphQL client.
-    """
-
     @abstractmethod
     def execute(self, request: GraphQLRequest) -> GraphQLResponse:
-        """
-        Executes the given GraphQL request.
-
-        :param request: The GraphQL request.
-        :return: The GraphQL response.
-        """
         raise NotImplementedError()
 
 
 class UrllibGraphQLClient(GraphQLClient):
-    """
-    A GraphQL client that uses urllib to execute requests.
-    """
-
     headers = {"Content-Type": "application/json"}
 
     def __init__(self):
         self._serializer = JsonSerializer.create_fastest()
 
     def execute(self, request: GraphQLRequest) -> GraphQLResponse:
-        """
-        Executes the given GraphQL request.
-
-        :param request: The GraphQL request.
-        :return: The GraphQL response.
-        """
         body = {"query": request.query}
         if request.variables:
             body["variables"] = request.variables

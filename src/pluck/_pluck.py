@@ -19,7 +19,18 @@ Pluck = Callable[[str, Variables], "Response"]
 
 class Response:
     """
-    Contains a response from a Pluck GraphQL query.
+    Contains a response from a GraphQL server.
+
+    This object contains the :meth:`data` and :meth:`error` fields from the
+    response plus any data-frames  (``frames``) that have been plucked from the
+    result.
+
+    :meth:`frames` is a dictionary whose keys are correspond to either the name
+    of the field on which the ``@frame`` directive was placed, or as specified
+    by the name argument of the directive.
+
+    This object also acts an iterator that returns the data-frames. The order
+    matches the order they are declared in the query.
     """
 
     def __init__(
@@ -29,11 +40,16 @@ class Response:
         frames: Dict[str, DataFrame],
     ):
         """
-        Create a new Response.
+        Create a new instance.
 
-        :param data: The optional data returned from the query.
-        :param errors: The optional errors returned from the query.
-        :param frames: The dictionary of data-frames returned from the query.
+        Parameters
+        ----------
+        data : dict, optional
+            The data returned from the query.
+        errors : dict, optional
+            The optional errors returned from the query.
+        frames : dict{str, DataFrame}
+            The dictionary of data-frames returned from the query.
         """
         assert frames is not None
         self._data = data
@@ -43,62 +59,41 @@ class Response:
     @property
     def data(self) -> Optional[Dict]:
         """
-        :returns: The optional data returned from the query.
+        Returns the data returned from the query (optional).
         """
         return self._data
 
     @property
     def errors(self) -> Optional[List]:
         """
-        :returns: The optional errors returned from the query.
+        Returns the errors returned from the query (optional).
         """
         return self._errors
 
     @property
     def frames(self) -> Dict[str, DataFrame]:
         """
-        :returns: The dictionary of data-frames returned from the query. If the
-                  query was frameless, this will be an empty dict.
+        Returns the dictionary of data-frames returned from the query. If there
+        are no data-frames in the response, this will be an empty dict.
         """
         return self._frames
 
     def raise_for_errors(self):
         """
-        :raises PluckError: If the response contains errors.
+        Raises a :class:`GraphQLError` if the response contains errors.
         """
         if self.errors:
             raise GraphQLError.from_errors(self.errors)
 
     def __iter__(self):
         """
-        Iterate over the data frames.
+        Iterate over the data frames. The order matches the order they are
+        declared in the query.
+
+        Raises :class:`AssertionError` when the response contains no data-frames.
         """
-        assert self.frames, "No data frames were returned."
+        assert self.frames, "The response contains no data-frames."
         return self.frames.values().__iter__()
-
-
-def create(
-    url: Url,
-    headers: Headers = None,
-    separator: str = ".",
-    client: GraphQLClient = None,
-) -> Pluck:
-    """
-    Create a partial function equivalent to `read_graphql` with the specified options.
-
-    :param url: The GraphQL URL against which to execute the query.
-    :param headers: The HTTP headers to set when executing the query.
-    :param client: The optional GqlClient instance to use for executing the query.
-    :param separator: The optional separator for nested record names (the default is '.').
-    :return: A function equivalent to `read_graphql` that can be used to execute a GraphQL query.
-    """
-    return functools.partial(
-        read_graphql,
-        url=url,
-        headers=headers,
-        separator=separator,
-        client=client,
-    )
 
 
 def read_graphql(
@@ -111,20 +106,92 @@ def read_graphql(
     client: GraphQLClient = None,
 ) -> Response:
     """
-    Execute a GraphQL query and return a Response object.
+    Execute a GraphQL query and return a :class:`Response` object.
 
-    :param query: The GraphQL query to execute.
-    :param variables: The optional dictionary of variables to pass to the query.
-    :param url: The GraphQL URL against which to execute the query.
-    :param headers: The HTTP headers to set when executing the query.
-    :param client: The optional GqlClient instance to use for executing the query.
-    :param separator: The optional separator for nested record names (the default is '.').
-    :return: A Response object.
-    :rtype: Response
-    :raises PluckError: Occurs when the query execution failed or an HTTP error is encountered.
+    Parameters
+    ----------
+    query : str
+        The GraphQL query to execute.
+    variables : dict{str, Any}, optional
+        The dictionary of variables to pass to the query.
+    url : str
+        The GraphQL URL against which to execute the query.
+    headers : dict{str, Any}, optional
+        The HTTP headers to set when executing the query.
+    separator : str, optional
+        The separator for nested record names (the default is '.').
+    client : GraphQLClient, optional
+        The client instance to use for executing the query (the default uses
+        ``urllib``).
+
+    Returns
+    -------
+    A :class:`Response` object containing the result of the query.
+
+    Examples
+-   --------
+
+    >>> query = '''
+    {
+        launches(limit: 5) @frame {
+            mission_name
+            launch_date_local
+        }
+    }
+    '''
+    >>> df, = pluck.read_graphql(query, url="https://api.spacex.land/graphql")
     """
     request = GraphQLRequest(url, query, variables, headers)
     options = ExecutorOptions(separator, client)
     executor = Executor(options)
     response = Response(*executor.execute(request))
     return response
+
+
+def create(
+    url: Url,
+    headers: Headers = None,
+    separator: str = ".",
+    client: GraphQLClient = None,
+) -> Pluck:
+    """
+    Create a partial function equivalent to :func:`read_graphql` with the
+    specified options.
+
+    Parameters
+    ----------
+    url : str
+        The GraphQL URL against which to execute the query.
+    headers : dict{str, Any}, optional
+        The HTTP headers to set when executing the query.
+    separator : str, optional
+        The separator for nested record names (the default is '.').
+    client : GraphQLClient, optional
+        The client instance to use for executing the query (the default uses
+        ``urllib``).
+
+    Returns
+    -------
+    A function equivalent to :func:`read_graphql`.
+
+    Examples
+-   --------
+
+    >>> read_graphql = pluck.create(url="https://api.spacex.land/graphql")
+    >>> query = '''
+    {
+        launches(limit: 5) @frame {
+            mission_name
+            launch_date_local
+        }
+    }
+    '''
+    >>> df, = read_graphql(query)
+    """
+    return functools.partial(
+        read_graphql,
+        url=url,
+        headers=headers,
+        separator=separator,
+        client=client,
+    )
