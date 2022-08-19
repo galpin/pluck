@@ -6,6 +6,7 @@ from typing import List
 import graphql
 from graphql.language import REMOVE, DirectiveNode, FieldNode, Node, Visitor
 
+from . import GraphQLError
 from ._json import JsonPath
 
 
@@ -38,7 +39,9 @@ class ParsedQueryBuilder:
     def add_frame(self, path: JsonPath):
         info = FrameInfo(path, path[-1])
         if info.name in self._frames:
-            raise ValueError(f"Duplicate frame name: '{info.name}'.")
+            raise GraphQLError(
+                f"Query contains duplicate frames with the same name ('{info.name}')."
+            )
         self._frames[info.name] = info
 
     def set_query(self, query: str):
