@@ -1,11 +1,11 @@
 # Copyright (c) 2022 Martin Galpin. See LICENSE for details.
 
 import json
+import urllib.error
 
 import pandas as pd
 import pytest
 
-from pluck import HTTPStatusError
 from .conftest import StubGraphQLClient
 
 
@@ -121,7 +121,7 @@ def test_when_url_is_none(ctx):
 def test_when_http_status_is_non_2xx(ctx, status_code):
     ctx.setup_response(status_code=status_code)
 
-    with pytest.raises(HTTPStatusError) as excinfo:
+    with pytest.raises(urllib.error.HTTPError) as excinfo:
         ctx.read_graphql(
             query="{ launches { id } }",
         )
