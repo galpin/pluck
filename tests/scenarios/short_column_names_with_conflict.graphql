@@ -1,0 +1,9 @@
+{
+  launch: launches {
+    id
+    name: mission_name
+    rocket {
+      name: rocket_name
+    }
+  }
+}

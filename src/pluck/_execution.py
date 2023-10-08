@@ -3,6 +3,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
+import pandas as pd
+
 from ._json import (
     STOP,
     JsonArray,
@@ -27,6 +29,7 @@ EMPTY = tuple()
 class ExecutorOptions:
     separator: str
     client: Optional[GraphQLClient]
+    column_names: Optional[str]
     library: Optional[DataFrameLibrary] = field(default=None)
 
     def __post_init__(self):
@@ -46,8 +49,9 @@ class Executor:
         parsed_query = QueryParser(request.query).parse()
         new_request = request.replace(query=parsed_query.query)
         response = self._execute(new_request)
-        frame_data = self._extract(parsed_query, response)
-        frames = self._normalize(frame_data)
+        extracted = self._extract(parsed_query, response)
+        frames = self._normalize(extracted)
+        frames = self._rename_columns(frames)
         return response.data, response.errors, frames
 
     @timeit
@@ -76,8 +80,17 @@ class Executor:
         return frames
 
     @timeit
-    def _create_data_frame(self, data):
+    def _create_data_frame(self, data) -> DataFrame:
         return self._options.library.create(data)
+
+    @timeit
+    def _rename_columns(self, frames: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
+        mode = self._options.column_names
+        modes = mode if isinstance(mode, dict) else defaultdict(lambda: mode)
+        return {
+            name: get_column_names(modes[name])(self._options, df)
+            for name, df in frames.items()
+        }
 
 
 class FrameExtractorContext:
@@ -126,3 +139,37 @@ class FrameExtractor(JsonVisitor):
         captured = self._captured.get(path)
         if captured is value:
             del self._captured[path]
+
+
+def get_column_names(mode):
+    match mode:
+        case None | "full" | "FULL":
+            return rename_long
+        case "short" | "SHORT":
+            return rename_short
+        case _:
+            raise ValueError(f"{mode} is not a valid value")
+
+
+def rename_long(_, df):
+    return df
+
+
+# TODO Replace with implementation that does not require splitting.
+def rename_short(options: ExecutorOptions, df: DataFrame) -> pd.DataFrame:
+    separator = options.separator
+    original = df.columns
+    renamed = {}
+    for name in original:
+        parts = name.split(separator)
+        new_name = parts[-1]
+        try:
+            # Name conflict: qualify conflicts with their parents.
+            existing_parts = renamed.pop(new_name)
+            existing_name = ".".join(existing_parts[-2:])
+            renamed[existing_name] = existing_parts
+            new_name = ".".join(parts[-2:])
+        except KeyError:
+            pass
+        renamed[new_name] = parts
+    return df.rename(columns=dict(zip(original, renamed.keys())))
