@@ -1,7 +1,8 @@
 [tool.poetry]
 name = "pluck-graphql"
-version = "0.3.0"
+version = "0.3.1"
 description = "Transform GraphQL queries into Pandas data-frames."
+readme = "README.md"
 authors = ["Martin Galpin <galpin@gmail.com>"]
 license = "MIT License"
 repository = "https://github.com/galpin/pluck"
