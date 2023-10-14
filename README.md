@@ -270,7 +270,7 @@ launches
 
 ### Column names
 
-Column are named according to the JSON path of the element in the response.
+Columns are named according to the JSON path of the element in the response.
 
 However, we can use a different naming strategy by specifying `column_names` to `execute`.
 
