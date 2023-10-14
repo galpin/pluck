@@ -52,13 +52,16 @@ frame
 
 The query above uses _implicit mode_. This is where the entire response is normalized into a single data-frame.
 
-The return value from `execute` is an instance of `pluck.Response`. This object is _iterable_ and enumerates the data-frames in the query. Because this query uses _implicit mode_, the iterator contains only a single data-frame (note that the trailing comma is still required).
+The return value from `execute` is an instance of `pluck.Response`. This object is _iterable_ and enumerates the
+data-frames in the query. Because this query uses _implicit mode_, the iterator contains only a single data-frame (note
+that the trailing comma is still required).
 
 ### @frame directive
 
 But Pluck is more powerful than _implicit mode_ because it provides a custom `@frame` directive.
 
-The `@frame` directive specifies portions of the GraphQL response that we want to transform into data-frames. The directive is removed before the query is sent to the GraphQL server.
+The `@frame` directive specifies portions of the GraphQL response that we want to transform into data-frames. The 
+directive is removed before the query is sent to the GraphQL server.
 
 Using the same query, rather than use implicit mode, let's pluck the `launches` field from the response:
 
@@ -135,10 +138,10 @@ rockets
 | Falcon Heavy | rocket | SpaceX  |            70 |   1420788 |
 | Starship     | rocket | SpaceX  |           118 |   1335000 |
 
-
 ### Lists
 
-When a response includes a list, the data-frame is automatically expanded to include one row per item in the list. This is repeated for every subsequent list in the response.
+When a response includes a list, the data-frame is automatically expanded to include one row per item in the list. This
+is repeated for every subsequent list in the response.
 
 For example, let's query the first five `capsules` and which missions they have been used for:
 
@@ -196,7 +199,6 @@ cores, missions = pluck.execute(query, url=SpaceX)
 ```
 
 Now we have the `cores`:
-
 
 ```python
 cores
@@ -258,7 +260,6 @@ launches
 | OG-2 Mission 2 | 2015-12-22T21:29:00-04:00 | Falcon 9    |
 | FalconSat      | 2006-03-25T10:30:00+12:00 | Falcon 1    |
 | CRS-1          | 2012-10-08T20:35:00-04:00 | Falcon 9    |
-
 
 ### Column names
 
@@ -324,12 +325,15 @@ launches
 | GPS III SV04 (Sacagawea)    |
 | Starlink-14 (v1.0)          |
 
-
 ### Responses
 
-Most of the time, Pluck is used to transform the GraphQL query directly into one or more data-frames. However, it is also possible to retreive the the raw GraphQL response (as well as the data-frames) by not immeadiately iterating over the return value.
+Most of the time, Pluck is used to transform the GraphQL query directly into one or more data-frames. However, it is
+also possible to retreive the the raw GraphQL response (as well as the data-frames) by not immeadiately iterating over
+the return value.
 
-The return value is a `pluck.Response` object and contains the `data` and `errors` from the raw GraphQL response and map of `Dict[str, DataFrame]` containing each data-frame in the query. The name of the frame corresponds to the field on which the `@frame` directive is placed or `default` when using implicit mode.
+The return value is a `pluck.Response` object and contains the `data` and `errors` from the raw GraphQL response and
+map of `Dict[str, DataFrame]` containing each data-frame in the query. The name of the frame corresponds to the field
+on which the `@frame` directive is placed or `default` when using implicit mode.
 
 ```python
 query = """
@@ -370,11 +374,10 @@ landpads
 | OCISLY | Of Course I Still Love You    | Florida         |             28.4104 |             -80.6188 |
 | JRTI-1 | Just Read The Instructions V1 | Florida         |             28.4104 |             -80.6188 |
 
-
 ### pluck.create
 
-Pluck also provides a `create` factory function which returns a customized `execute` function which closes over the `url` and other configuration.
-
+Pluck also provides a `create` factory function which returns a customized `execute` function which closes over the
+`url`  and other configuration.
 
 ```python
 gql = pluck.create(url=SpaceX)
