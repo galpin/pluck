@@ -266,6 +266,44 @@ launches
 | CRS-1      | 2012-10-08T20:35:00-04:00 | Falcon 9  |
 
 
+### Column names
+
+Column are named according to the JSON path of the element in the response.
+
+However, we can use a different naming strategy by specifying `column_names` to `read_graphql`.
+
+For example, let's use `short` for the column names:
+
+```python
+query = """
+{
+  launches: launches(limit: 5) @frame {
+    name: mission_name
+    launch_date: launch_date_local
+    rocket {
+      rocket: rocket_name
+    }
+  }
+}
+"""
+launches, = pluck.read_graphql(query, column_names="short", url=SpaceX)
+launches
+```
+
+| name           | launch_date               | rocket   |
+|:---------------|:--------------------------|:---------|
+| Thaicom 6      | 2014-01-06T14:06:00-04:00 | Falcon 9 |
+| AsiaSat 6      | 2014-09-07T01:00:00-04:00 | Falcon 9 |
+| OG-2 Mission 2 | 2015-12-22T21:29:00-04:00 | Falcon 9 |
+| FalconSat      | 2006-03-25T10:30:00+12:00 | Falcon 1 |
+| CRS-1          | 2012-10-08T20:35:00-04:00 | Falcon 9 |
+
+If the short column name results in a conflict (two or more columns with the same name), the conflict is resolved by
+prefixing the name with the name of it's parent.
+
+The naming strategy can also be changed per data-frame by specifying a `dict[str, str]` where the key is name of the
+data-frame.
+
 ### Leaf fields
 
 The `@frame` directive can also be used on leaf fields.
