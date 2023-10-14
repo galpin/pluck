@@ -172,4 +172,4 @@ def rename_short(options: ExecutorOptions, df: DataFrame) -> pd.DataFrame:
         except KeyError:
             pass
         renamed[new_name] = parts
-    return df.rename(columns=dict(zip(original, renamed.keys())))
+    return options.library.rename(df, columns=dict(zip(original, renamed.keys())))
