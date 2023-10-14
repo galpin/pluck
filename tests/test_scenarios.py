@@ -52,7 +52,7 @@ def test_scenarios(name, scenario):
     setup = scenario.load_setup_module()
     kwargs = setup.get_kwargs() if setup else {}
 
-    actual = pluck.read_graphql(query, url=url, **kwargs)
+    actual = pluck.execute(query, url=url, **kwargs)
 
     assert actual.data == response.get("data")
     assert actual.errors == response.get("errors")

@@ -46,7 +46,7 @@ def create(
     client: GraphQLClient = None,
 ) -> PluckType:
     """
-    Create a pluck function equivalent to `read_graphql` that is pre-configured with the specified options.
+    Create a pluck function equivalent to `execute` that is pre-configured with the specified options.
 
     :param url: The GraphQL URL against which to execute the query.
     :param headers: The HTTP headers to set when executing the query.
@@ -59,7 +59,7 @@ def create(
     """
 
     def pluck(query: QueryType, variables: VariablesType = None) -> Response:
-        return read_graphql(
+        return execute(
             query,
             variables,
             url=url,
@@ -72,7 +72,7 @@ def create(
     return pluck
 
 
-def read_graphql(
+def execute(
     query: QueryType,
     variables: VariablesType = None,
     *,

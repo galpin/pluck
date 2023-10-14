@@ -15,10 +15,9 @@ pip install pluck-graphql
 
 ## Introduction
 
-The easiest way to get started is to use `pluck.read_graphql` to execute a query.
+The easiest way to get started is to run `pluck.execute` with a query.
 
 Let's read the first five SpaceX launches into a data-frame:
-
 
 ```python
 import pluck
@@ -36,7 +35,7 @@ query = """
   }
 }
 """
-frame, = pluck.read_graphql(query, url=SpaceX)
+frame, = pluck.execute(query, url=SpaceX)
 frame
 ```
 
@@ -53,7 +52,7 @@ frame
 
 The query above uses _implicit mode_. This is where the entire response is normalized into a single data-frame.
 
-The return value from `read_graphql` is an instance of `pluck.Response`. This object is _iterable_ and enumerates the data-frames in the query. Because this query uses _implicit mode_, the iterator contains only a single data-frame (note that the trailing comma is still required).
+The return value from `execute` is an instance of `pluck.Response`. This object is _iterable_ and enumerates the data-frames in the query. Because this query uses _implicit mode_, the iterator contains only a single data-frame (note that the trailing comma is still required).
 
 ### @frame directive
 
@@ -62,7 +61,6 @@ But Pluck is more powerful than _implicit mode_ because it provides a custom `@f
 The `@frame` directive specifies portions of the GraphQL response that we want to transform into data-frames. The directive is removed before the query is sent to the GraphQL server.
 
 Using the same query, rather than use implicit mode, let's pluck the `launches` field from the response:
-
 
 ```python
 query = """
@@ -76,7 +74,7 @@ query = """
   }
 }
 """
-launches, = pluck.read_graphql(query, url=SpaceX)
+launches, = pluck.execute(query, url=SpaceX)
 launches
 ```
 
@@ -95,8 +93,7 @@ The column names are no longer prefixed with `launches` because it is now the ro
 
 We can also pluck multiple data-frames from a single GraphQL query.
 
-Let's query the first five SpaceX `rockets` as well: 
-
+Let's query the first five SpaceX `rockets` as well:
 
 ```python
 query = """
@@ -121,7 +118,7 @@ query = """
   }
 }
 """
-launches, rockets = pluck.read_graphql(query, url=SpaceX)
+launches, rockets = pluck.execute(query, url=SpaceX)
 ```
 
 Now we have the original `launches` and a new `rockets` data-frame:
@@ -145,7 +142,6 @@ When a response includes a list, the data-frame is automatically expanded to inc
 
 For example, let's query the first five `capsules` and which missions they have been used for:
 
-
 ```python
 query = """
 {
@@ -159,7 +155,7 @@ query = """
   }
 }
 """
-capsules, = pluck.read_graphql(query, url=SpaceX)
+capsules, = pluck.execute(query, url=SpaceX)
 capsules
 ```
 
@@ -183,7 +179,6 @@ Frames can also be nested and if a nested `@frame` is within a list, the rows ar
 
 For example, we can pluck the top five `cores` and their `missions`:
 
-
 ```python
 query = """
 {
@@ -197,7 +192,7 @@ query = """
   }
 }
 """
-cores, missions = pluck.read_graphql(query, url=SpaceX)
+cores, missions = pluck.execute(query, url=SpaceX)
 ```
 
 Now we have the `cores`:
@@ -240,7 +235,6 @@ Column names can be modified using normal GraphQL aliases.
 
 For example, let's tidy-up the field names in the `launches` data-frame:
 
-
 ```python
 query = """
 {
@@ -253,7 +247,7 @@ query = """
   }
 }
 """
-launches, = pluck.read_graphql(query, url=SpaceX)
+launches, = pluck.execute(query, url=SpaceX)
 launches
 ```
 
@@ -270,7 +264,7 @@ launches
 
 Column are named according to the JSON path of the element in the response.
 
-However, we can use a different naming strategy by specifying `column_names` to `read_graphql`.
+However, we can use a different naming strategy by specifying `column_names` to `execute`.
 
 For example, let's use `short` for the column names:
 
@@ -286,7 +280,7 @@ query = """
   }
 }
 """
-launches, = pluck.read_graphql(query, column_names="short", url=SpaceX)
+launches, = pluck.execute(query, column_names="short", url=SpaceX)
 launches
 ```
 
@@ -310,7 +304,6 @@ The `@frame` directive can also be used on leaf fields.
 
 For example, we can extract only the name of the mission from past launches:
 
-
 ```python
 query = """
 {
@@ -319,7 +312,7 @@ query = """
   }
 }
 """
-launches, = pluck.read_graphql(query, url=SpaceX)
+launches, = pluck.execute(query, url=SpaceX)
 launches
 ```
 
@@ -337,7 +330,6 @@ launches
 Most of the time, Pluck is used to transform the GraphQL query directly into one or more data-frames. However, it is also possible to retreive the the raw GraphQL response (as well as the data-frames) by not immeadiately iterating over the return value.
 
 The return value is a `pluck.Response` object and contains the `data` and `errors` from the raw GraphQL response and map of `Dict[str, DataFrame]` containing each data-frame in the query. The name of the frame corresponds to the field on which the `@frame` directive is placed or `default` when using implicit mode.
-
 
 ```python
 query = """
@@ -360,7 +352,7 @@ query = """
   }
 }
 """
-response = pluck.read_graphql(query, url=SpaceX)
+response = pluck.execute(query, url=SpaceX)
 
 # print(response.data.keys())
 # print(response.errors)
@@ -381,11 +373,11 @@ landpads
 
 ### pluck.create
 
-Pluck also provides a `create` factory function which returns a customized `read_graphql` function which closes over the `url` and other configuration.
+Pluck also provides a `create` factory function which returns a customized `execute` function which closes over the `url` and other configuration.
 
 
 ```python
-read_graphql = pluck.create(url=SpaceX)
+gql = pluck.create(url=SpaceX)
 
 query = """
 {
@@ -407,5 +399,5 @@ query = """
   }
 }
 """
-launches, landpads = read_graphql(query)
+launches, landpads = gql(query)
 ```
