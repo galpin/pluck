@@ -41,7 +41,7 @@ def get_scenarios():
 def test_scenarios(name, scenario):
     url = "http://api/graphql"
     query = scenario.query.read_text()
-    response = json.load(scenario.response.open())
+    response = json.load(scenario.response.open(encoding="utf-8"))
     httpretty.register_uri(httpretty.POST, url, body=json.dumps(response))
     setup = scenario.load_setup_module()
     kwargs = setup.get_kwargs() if setup else {}
