@@ -22,9 +22,12 @@ class Response:
     """
     A response from a pluck query.
 
-    :attr data: The data returned from the query.
-    :attr errors: The errors returned from the query.
-    :attr frame: The dictionary of data frames returned from the query.
+    Iterating over the response will yield the data-frames.
+
+    Args:
+        data: The data returned from the query.
+        errors: The errors returned from the query.
+        frames: The dictionary of data frames returned from the query.
     """
 
     data: Dict
@@ -33,7 +36,7 @@ class Response:
 
     def __iter__(self):
         """
-        Iterate over the data frames.
+        Iterate over the data-frames.
         """
         return self.frames.values().__iter__()
 
@@ -48,14 +51,26 @@ def create(
     """
     Create a pluck function equivalent to `execute` that is pre-configured with the specified options.
 
-    :param url: The GraphQL URL against which to execute the query.
-    :param headers: The HTTP headers to set when executing the query.
-    :param client: An optional GqlClient instance to use for executing the query.
-    :param separator: An optional separator for nested record names (the default is '.').
-    :param column_names: An optional specifier for how to format column names (the default is `full`).
-        When `full`, the column names will be the full path to the field in the GraphQL query.
-        When `short`, the column names will be the last part of the path to the field in the GraphQL query.
-    :return: A Pluck function.
+    Args:
+        url:
+            The GraphQL URL against which to execute the query.
+        headers:
+            The HTTP headers to set when executing the query.
+        separator:
+            An optional separator for nested record names (the default is `.`).
+        column_names:
+            An optional specifier for how to format column names (the default is `full`).
+
+            `full` means the column names will be the full path to the field in the GraphQL query.
+            `short` means the column names will be the last part of the path to the field in the GraphQL query.
+            If a conflict between fields is detected, all names will be prefixed with the name of their parent.
+
+            Different modes can be specified using a dictionary (the key is the name of the frame).
+        client:
+            An optional GqlClient instance to use for executing the query.
+
+    Returns:
+        A Response object. Iterating over the response will yield the data frames.
     """
 
     def pluck(query: QueryType, variables: VariablesType = None) -> Response:
@@ -85,18 +100,30 @@ def execute(
     """
     Execute a GraphQL query and return a Response object.
 
-    :param query: The GraphQL query to execute.
-    :param variables: The optional dictionary of variables to pass to the query.
-    :param url: The GraphQL URL against which to execute the query.
-    :param headers: The HTTP headers to set when executing the query.
-    :param separator: An optional separator for nested record names (the default is `.`).
-    :param column_names: An optional specifier for how to format column names (the default is `full`).
-        When `full`, the column names will be the full path to the field in the GraphQL query.
-        When `short`, the column names will be the last part of the path to the field in the GraphQL query. If a
-        conflict between fields is detected, all names will be prefixed with the name of their parent.
-        Different modes can be specified using a dictionary (the key is the name of the frame).
-    :param client: An optional GqlClient instance to use for executing the query.
-    :return: A Response object.
+    Args:
+        query:
+            The GraphQL query to execute.
+        variables:
+            The optional dictionary of variables to pass to the query.
+        url:
+            The GraphQL URL against which to execute the query.
+        headers:
+            The HTTP headers to set when executing the query.
+        separator:
+            An optional separator for nested record names (the default is `.`).
+        column_names:
+            An optional specifier for how to format column names (the default is `full`).
+
+            `full` means the column names will be the full path to the field in the GraphQL query.
+            `short` means the column names will be the last part of the path to the field in the GraphQL query.
+            If a conflict between fields is detected, all names will be prefixed with the name of their parent.
+
+            Different modes can be specified using a dictionary (the key is the name of the frame).
+        client:
+            An optional GqlClient instance to use for executing the query.
+
+    Returns:
+        A Response object. Iterating over the response will yield the data frames.
     """
     request = GraphQLRequest(url, query, variables, headers)
     options = ExecutorOptions(separator, client, column_names)
