@@ -15,14 +15,15 @@ pip install pluck-graphql
 
 ## Introduction
 
-The easiest way to get started is to run `pluck.execute` with a query.
+The easiest way to get started is to use `pluck.execute` to execute a query.
 
 Let's read the first five SpaceX launches into a data-frame:
+
 
 ```python
 import pluck
 
-SpaceX = "https://api.spacex.land/graphql"
+SpaceX = "https://main--spacex-l4uc6p.apollographos.net/graphql"
 
 query = """
 {
@@ -39,31 +40,29 @@ frame, = pluck.execute(query, url=SpaceX)
 frame
 ```
 
-| launches.mission_name | launches.launch_date_local | launches.rocket.rocket_name |
-|:----------------------|:---------------------------|:----------------------------|
-| Thaicom 6             | 2014-01-06T14:06:00-04:00  | Falcon 9                    |
-| AsiaSat 6             | 2014-09-07T01:00:00-04:00  | Falcon 9                    |
-| OG-2 Mission 2        | 2015-12-22T21:29:00-04:00  | Falcon 9                    |
-| FalconSat             | 2006-03-25T10:30:00+12:00  | Falcon 1                    |
-| CRS-1                 | 2012-10-08T20:35:00-04:00  | Falcon 9                    |
+| launches.mission_name   | launches.launch_date_local   | launches.rocket.rocket_name   |
+|:------------------------|:-----------------------------|:------------------------------|
+| FalconSat           | 2006-03-25T10:30:00+12:00| Falcon 1                  |
+| DemoSat             | 2007-03-21T13:10:00+12:00| Falcon 1                  |
+| Trailblazer         | 2008-08-03T15:34:00+12:00| Falcon 1                  |
+| RatSat              | 2008-09-28T11:15:00+12:00| Falcon 1                  |
+| RazakSat            | 2009-07-13T15:35:00+12:00| Falcon 1                  |
 
 
 ### Implicit Mode
 
 The query above uses _implicit mode_. This is where the entire response is normalized into a single data-frame.
 
-The return value from `execute` is an instance of `pluck.Response`. This object is _iterable_ and enumerates the
-data-frames in the query. Because this query uses _implicit mode_, the iterator contains only a single data-frame (note
-that the trailing comma is still required).
+The return value from `execute` is an instance of `pluck.Response`. This object is _iterable_ and enumerates the data-frames in the query. Because this query uses _implicit mode_, the iterator contains only a single data-frame (note that the trailing comma is still required).
 
 ### @frame directive
 
 But Pluck is more powerful than _implicit mode_ because it provides a custom `@frame` directive.
 
-The `@frame` directive specifies portions of the GraphQL response that we want to transform into data-frames. The 
-directive is removed before the query is sent to the GraphQL server.
+The `@frame` directive specifies portions of the GraphQL response that we want to transform into data-frames. The directive is removed before the query is sent to the GraphQL server.
 
 Using the same query, rather than use implicit mode, let's pluck the `launches` field from the response:
+
 
 ```python
 query = """
@@ -81,13 +80,13 @@ launches, = pluck.execute(query, url=SpaceX)
 launches
 ```
 
-| mission_name   | launch_date_local         | rocket.rocket_name |
-|:---------------|:--------------------------|:-------------------|
-| Thaicom 6      | 2014-01-06T14:06:00-04:00 | Falcon 9           |
-| AsiaSat 6      | 2014-09-07T01:00:00-04:00 | Falcon 9           |
-| OG-2 Mission 2 | 2015-12-22T21:29:00-04:00 | Falcon 9           |
-| FalconSat      | 2006-03-25T10:30:00+12:00 | Falcon 1           |
-| CRS-1          | 2012-10-08T20:35:00-04:00 | Falcon 9           |
+| mission_name   | launch_date_local     | rocket.rocket_name   |
+|:---------------|:--------------------------|:---------------------|
+| FalconSat  | 2006-03-25T10:30:00+12:00 | Falcon 1         |
+| DemoSat    | 2007-03-21T13:10:00+12:00 | Falcon 1         |
+| Trailblazer| 2008-08-03T15:34:00+12:00 | Falcon 1         |
+| RatSat     | 2008-09-28T11:15:00+12:00 | Falcon 1         |
+| RazakSat   | 2009-07-13T15:35:00+12:00 | Falcon 1         |
 
 
 The column names are no longer prefixed with `launches` because it is now the root of the data-frame.
@@ -96,7 +95,8 @@ The column names are no longer prefixed with `launches` because it is now the ro
 
 We can also pluck multiple data-frames from a single GraphQL query.
 
-Let's query the first five SpaceX `rockets` as well:
+Let's query the first five SpaceX `rockets` as well: 
+
 
 ```python
 query = """
@@ -131,104 +131,109 @@ Now we have the original `launches` and a new `rockets` data-frame:
 rockets
 ```
 
-| name         | type   | company | height.meters |   mass.kg |
-|:-------------|:-------|:--------|--------------:|----------:|
-| Falcon 1     | rocket | SpaceX  |         22.25 |     30146 |
-| Falcon 9     | rocket | SpaceX  |            70 |    549054 |
-| Falcon Heavy | rocket | SpaceX  |            70 |   1420788 |
-| Starship     | rocket | SpaceX  |           118 |   1335000 |
+| name     | type   | company   |   height.meters |   mass.kg |
+|:-------------|:-------|:----------|----------------:|----------:|
+| Falcon 1 | rocket | SpaceX|           22.25 |     30146 |
+| Falcon 9 | rocket | SpaceX|           70|    549054 |
+| Falcon Heavy | rocket | SpaceX|           70|   1420788 |
+| Starship | rocket | SpaceX|          118|   1335000 |
+
 
 ### Lists
 
-When a response includes a list, the data-frame is automatically expanded to include one row per item in the list. This
-is repeated for every subsequent list in the response.
+When a response includes a list, the data-frame is automatically expanded to include one row per item in the list. This is repeated for every subsequent list in the response.
 
-For example, let's query the first five `capsules` and which missions they have been used for:
+For example, let's query the first five `rockets` and their `payload_weights`:
+
 
 ```python
 query = """
 {
-  capsules(limit: 5) @frame {
+  rockets(limit: 5) @frame {
     id
     type
-    status
-    missions {
+    name
+    payload_weights {
       name
+      kg
     }
   }
 }
 """
-capsules, = pluck.execute(query, url=SpaceX)
-capsules
+rockets, = pluck.execute(query, url=SpaceX)
+rockets
 ```
 
-| id   | type        | status    | missions.name |
-|:-----|:------------|:----------|:--------------|
-| C105 | Dragon 1.1  | unknow n  | CRS-3         |
-| C101 | Dragon 1.0  | retired   | COTS 1        |
-| C109 | Dragon 1.1  | destroyed | CRS-7         |
-| C110 | Dragon 1.1  | active    | CRS-8         |
-| C110 | Dragon 1.1  | active    | CRS-14        |
-| C106 | Dragon 1.1  | active    | CRS-4         |
-| C106 | Dragon 1.1  | active    | CRS-11        |
-| C106 | Dragon 1.1  | active    | CRS-19        |
+| id                   | type   | name     | payload_weights.name      |   payload_weights.kg |
+|:-------------------------|:-------|:-------------|:------------------------------|---------------------:|
+| 5e9d0d95eda69955f709d1eb | rocket | Falcon 1 | Low Earth Orbit           |                  450 |
+| 5e9d0d95eda69973a809d1ec | rocket | Falcon 9 | Low Earth Orbit           |                22800 |
+| 5e9d0d95eda69973a809d1ec | rocket | Falcon 9 | Geosynchronous Transfer Orbit |                 8300 |
+| 5e9d0d95eda69973a809d1ec | rocket | Falcon 9 | Mars Orbit                |                 4020 |
+| 5e9d0d95eda69974db09d1ed | rocket | Falcon Heavy | Low Earth Orbit           |                63800 |
+| 5e9d0d95eda69974db09d1ed | rocket | Falcon Heavy | Geosynchronous Transfer Orbit |                26700 |
+| 5e9d0d95eda69974db09d1ed | rocket | Falcon Heavy | Mars Orbit                |                16800 |
+| 5e9d0d95eda69974db09d1ed | rocket | Falcon Heavy | Pluto Orbit               |                 3500 |
+| 5e9d0d96eda699382d09d1ee | rocket | Starship | Low Earth Orbit           |               150000 |
+| 5e9d0d96eda699382d09d1ee | rocket | Starship | Mars Orbit                |               100000 |
+| 5e9d0d96eda699382d09d1ee | rocket | Starship | Moon Orbit                |               100000 |
 
 
-Rather than five rows, we have seven; each row contains a capsule and a mission.
+Rather than five rows, we have 11; each row contains a rocket and it's payload.
 
 ### Nested @frame directives
 
 Frames can also be nested and if a nested `@frame` is within a list, the rows are combined into a single data-frame.
 
-For example, we can pluck the top five `cores` and their `missions`:
+For example, we can pluck the top five `rockets` and `engines`:
+
 
 ```python
 query = """
 {
-  cores(limit: 5) @frame {
+  rockets(limit: 5) @frame {
     id
-    status
-    missions @frame {
-      name
-      flight
+    type
+    name
+    engines @frame {
+      number
+      type
+      version
     }
   }
 }
 """
-cores, missions = pluck.execute(query, url=SpaceX)
+rockets, engines = pluck.execute(query, url=SpaceX)
 ```
 
-Now we have the `cores`:
-
-```python
-cores
-```
-
-| id    | status   | missions.name                | missions.flight |
-|:------|:---------|:-----------------------------|----------------:|
-| B1015 | lost     | CRS-6                        |              22 |
-| B0006 | lost     | CRS-1                        |               9 |
-| B1034 | lost     | Inmarsat-5 F4                |              40 |
-| B1016 | lost     | TürkmenÄlem 52°E / MonacoSAT |              23 |
-| B1025 | inactive | CRS-9                        |              32 |
-| B1025 | inactive | Falcon Heavy Test Flight     |              55 |
-
-
-And we also have the `missions` data-frame that has been combined from every item in `cores`:
+Now we have the `rockets`:
 
 
 ```python
-missions
+rockets
 ```
 
-| name                         |   flight |
-|:-----------------------------|---------:|
-| CRS-6                        |       22 |
-| CRS-1                        |        9 |
-| Inmarsat-5 F4                |       40 |
-| TürkmenÄlem 52°E / MonacoSAT |       23 |
-| CRS-9                        |       32 |
-| Falcon Heavy Test Flight     |       55 |
+| id                   | type   | name     |   engines.number | engines.type   | engines.version   |
+|:-------------------------|:-------|:-------------|-----------------:|:---------------|:------------------|
+| 5e9d0d95eda69955f709d1eb | rocket | Falcon 1 |                1 | merlin     | 1C            |
+| 5e9d0d95eda69973a809d1ec | rocket | Falcon 9 |                9 | merlin     | 1D+           |
+| 5e9d0d95eda69974db09d1ed | rocket | Falcon Heavy |               27 | merlin     | 1D+           |
+| 5e9d0d96eda699382d09d1ee | rocket | Starship |               37 | raptor     |               |
+
+
+And we also have the `engines` data-frame that has been combined from every item in `rockets`:
+
+
+```python
+engines
+```
+
+|   number | type   | version   |
+|---------:|:-------|:----------|
+|        1 | merlin | 1C    |
+|        9 | merlin | 1D+   |
+|       27 | merlin | 1D+   |
+|       37 | raptor |       |
 
 
 ### Aliases
@@ -236,6 +241,7 @@ missions
 Column names can be modified using normal GraphQL aliases.
 
 For example, let's tidy-up the field names in the `launches` data-frame:
+
 
 ```python
 query = """
@@ -253,13 +259,14 @@ launches, = pluck.execute(query, url=SpaceX)
 launches
 ```
 
-| mission        | launch_date               | rocket.name |
-|:---------------|:--------------------------|:------------|
-| Thaicom 6      | 2014-01-06T14:06:00-04:00 | Falcon 9    |
-| AsiaSat 6      | 2014-09-07T01:00:00-04:00 | Falcon 9    |
-| OG-2 Mission 2 | 2015-12-22T21:29:00-04:00 | Falcon 9    |
-| FalconSat      | 2006-03-25T10:30:00+12:00 | Falcon 1    |
-| CRS-1          | 2012-10-08T20:35:00-04:00 | Falcon 9    |
+| mission | launch_date           | rocket.name   |
+|:------------|:--------------------------|:--------------|
+| FalconSat   | 2006-03-25T10:30:00+12:00 | Falcon 1  |
+| DemoSat | 2007-03-21T13:10:00+12:00 | Falcon 1  |
+| Trailblazer | 2008-08-03T15:34:00+12:00 | Falcon 1  |
+| RatSat  | 2008-09-28T11:15:00+12:00 | Falcon 1  |
+| RazakSat| 2009-07-13T15:35:00+12:00 | Falcon 1  |
+
 
 ### Column names
 
@@ -268,6 +275,7 @@ Column are named according to the JSON path of the element in the response.
 However, we can use a different naming strategy by specifying `column_names` to `execute`.
 
 For example, let's use `short` for the column names:
+
 
 ```python
 query = """
@@ -285,13 +293,14 @@ launches, = pluck.execute(query, column_names="short", url=SpaceX)
 launches
 ```
 
-| name           | launch_date               | rocket   |
-|:---------------|:--------------------------|:---------|
-| Thaicom 6      | 2014-01-06T14:06:00-04:00 | Falcon 9 |
-| AsiaSat 6      | 2014-09-07T01:00:00-04:00 | Falcon 9 |
-| OG-2 Mission 2 | 2015-12-22T21:29:00-04:00 | Falcon 9 |
-| FalconSat      | 2006-03-25T10:30:00+12:00 | Falcon 1 |
-| CRS-1          | 2012-10-08T20:35:00-04:00 | Falcon 9 |
+| name    | launch_date           | rocket   |
+|:------------|:--------------------------|:---------|
+| FalconSat   | 2006-03-25T10:30:00+12:00 | Falcon 1 |
+| DemoSat | 2007-03-21T13:10:00+12:00 | Falcon 1 |
+| Trailblazer | 2008-08-03T15:34:00+12:00 | Falcon 1 |
+| RatSat  | 2008-09-28T11:15:00+12:00 | Falcon 1 |
+| RazakSat| 2009-07-13T15:35:00+12:00 | Falcon 1 |
+
 
 If the short column name results in a conflict (two or more columns with the same name), the conflict is resolved by
 prefixing the name with the name of it's parent.
@@ -305,6 +314,7 @@ The `@frame` directive can also be used on leaf fields.
 
 For example, we can extract only the name of the mission from past launches:
 
+
 ```python
 query = """
 {
@@ -317,23 +327,21 @@ launches, = pluck.execute(query, url=SpaceX)
 launches
 ```
 
-| mission                     |
-|:----------------------------|
-| Starlink-15 (v1.0)          |
-| Sentinel-6 Michael Freilich |
-| Crew-1                      |
-| GPS III SV04 (Sacagawea)    |
-| Starlink-14 (v1.0)          |
+| mission |
+|:------------|
+| FalconSat   |
+| DemoSat |
+| Trailblazer |
+| RatSat  |
+| RazakSat|
+
 
 ### Responses
 
-Most of the time, Pluck is used to transform the GraphQL query directly into one or more data-frames. However, it is
-also possible to retreive the the raw GraphQL response (as well as the data-frames) by not immeadiately iterating over
-the return value.
+Most of the time, Pluck is used to transform the GraphQL query directly into one or more data-frames. However, it is also possible to retreive the the raw GraphQL response (as well as the data-frames) by not immeadiately iterating over the return value.
 
-The return value is a `pluck.Response` object and contains the `data` and `errors` from the raw GraphQL response and
-map of `Dict[str, DataFrame]` containing each data-frame in the query. The name of the frame corresponds to the field
-on which the `@frame` directive is placed or `default` when using implicit mode.
+The return value is a `pluck.Response` object and contains the `data` and `errors` from the raw GraphQL response and map of `Dict[str, DataFrame]` containing each data-frame in the query. The name of the frame corresponds to the field on which the `@frame` directive is placed or `default` when using implicit mode.
+
 
 ```python
 query = """
@@ -348,11 +356,7 @@ query = """
   landpads(limit: 5) @frame {
     id
     full_name
-    location {
-      region
-      latitude
-      longitude
-    }
+    wikipedia
   }
 }
 """
@@ -363,24 +367,35 @@ response = pluck.execute(query, url=SpaceX)
 # print(response.frames.keys())
 
 launches, landpads = response
+launches
+print()
 landpads
 ```
 
-| id     | full_name                     | location.region |   location.latitude |   location.longitude |
-|:-------|:------------------------------|:----------------|--------------------:|---------------------:|
-| LZ-1   | Landing Zone 1                | Florida         |             28.4858 |             -80.5444 |
-| LZ-2   | Landing Zone 2                | Florida         |             28.4858 |             -80.5444 |
-| LZ-4   | Landing Zone 4                | California      |             34.633  |            -120.615  |
-| OCISLY | Of Course I Still Love You    | Florida         |             28.4104 |             -80.6188 |
-| JRTI-1 | Just Read The Instructions V1 | Florida         |             28.4104 |             -80.6188 |
+| id                   | mission_name   | rocket.rocket_name   |
+|:-------------------------|:---------------|:---------------------|
+| 5eb87cd9ffd86e000604b32a | FalconSat  | Falcon 1         |
+| 5eb87cdaffd86e000604b32b | DemoSat    | Falcon 1         |
+| 5eb87cdbffd86e000604b32c | Trailblazer| Falcon 1         |
+| 5eb87cdbffd86e000604b32d | RatSat     | Falcon 1         |
+| 5eb87cdcffd86e000604b32e | RazakSat   | Falcon 1         |
+    
+| id                   | full_name                 | wikipedia                                                                            |
+|:-------------------------|:------------------------------|:-----------------------------------------------------------------------------------------|
+| 5e9e3032383ecb267a34e7c7 | Landing Zone 1            | https://en.wikipedia.org/wiki/Landing_Zones_1_and_2                                  |
+| 5e9e3032383ecb90a834e7c8 | Landing Zone 2            | https://en.wikipedia.org/wiki/Landing_Zones_1_and_2                                  |
+| 5e9e3032383ecb554034e7c9 | Landing Zone 4            | https://en.wikipedia.org/wiki/Vandenberg_AFB_Space_Launch_Complex_4#LZ-4_landing_history |
+| 5e9e3032383ecb6bb234e7ca | Of Course I Still Love You| https://en.wikipedia.org/wiki/Autonomous_spaceport_drone_ship                        |
+| 5e9e3032383ecb761634e7cb | Just Read The Instructions V1 | https://en.wikipedia.org/wiki/Autonomous_spaceport_drone_ship                        |
+
 
 ### pluck.create
 
-Pluck also provides a `create` factory function which returns a customized `execute` function which closes over the
-`url`  and other configuration.
+Pluck also provides a `create` factory function which returns a customized `execute` function which closes over the `url` and other configuration.
+
 
 ```python
-gql = pluck.create(url=SpaceX)
+execute = pluck.create(url=SpaceX)
 
 query = """
 {
@@ -391,16 +406,17 @@ query = """
       rocket_name
     }
   }
-  landpads(limit: 5) @frame {
-    id
-    full_name
-    location {
-      region
-      latitude
-      longitude
-    }
-  }
 }
 """
-launches, landpads = gql(query)
+launches, = execute(query)
+launches
 ```
+
+| id                   | mission_name   | rocket.rocket_name   |
+|:-------------------------|:---------------|:---------------------|
+| 5eb87cd9ffd86e000604b32a | FalconSat  | Falcon 1         |
+| 5eb87cdaffd86e000604b32b | DemoSat    | Falcon 1         |
+| 5eb87cdbffd86e000604b32c | Trailblazer| Falcon 1         |
+| 5eb87cdbffd86e000604b32d | RatSat     | Falcon 1         |
+| 5eb87cdcffd86e000604b32e | RazakSat   | Falcon 1         |
+
