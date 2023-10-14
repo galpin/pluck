@@ -6,11 +6,15 @@ authors = ["Martin Galpin <galpin@gmail.com>"]
 license = "MIT License"
 repository = "https://github.com/galpin/pluck"
 classifiers = [
+    "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Tools :: Software Development :: Libraries",
-    "Intended Audience :: Developers"
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Scientific/Engineering",
+    "Intended Audience :: Developers",
 ]
 packages = [
     { include = "pluck", from = "src" }
