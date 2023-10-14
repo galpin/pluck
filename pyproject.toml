@@ -22,7 +22,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
-pandas = "^1.4.3"
+pandas = ">=1.4"
 graphql-core = "^3.2.1"
 
 [tool.poetry.dev-dependencies]
