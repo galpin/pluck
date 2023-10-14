@@ -11,13 +11,19 @@ import pytest
 import pluck
 
 
-@dataclass
+@dataclass(frozen=True)
 class ScenarioInfo:
     name: str
     query: Path
     response: Path
     expected: Path
     setup_module: str
+
+    def load_query(self):
+        return self.query.read_text()
+
+    def load_response(self):
+        return json.load(self.response.open(encoding="utf-8"))
 
     def load_setup_module(self):
         try:
@@ -40,8 +46,8 @@ def get_scenarios():
 @pytest.mark.parametrize("name,scenario", get_scenarios())
 def test_scenarios(name, scenario):
     url = "http://api/graphql"
-    query = scenario.query.read_text()
-    response = json.load(scenario.response.open(encoding="utf-8"))
+    query = scenario.load_query()
+    response = scenario.load_response()
     httpretty.register_uri(httpretty.POST, url, body=json.dumps(response))
     setup = scenario.load_setup_module()
     kwargs = setup.get_kwargs() if setup else {}
