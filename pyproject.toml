@@ -1,16 +1,20 @@
 [tool.poetry]
 name = "pluck-graphql"
-version = "0.2.0"
+version = "0.3.0"
 description = "Transform GraphQL queries into Pandas data-frames."
 authors = ["Martin Galpin <galpin@gmail.com>"]
 license = "MIT License"
 repository = "https://github.com/galpin/pluck"
 classifiers = [
+    "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Tools :: Software Development :: Libraries",
-    "Intended Audience :: Developers"
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Scientific/Engineering",
+    "Intended Audience :: Developers",
 ]
 packages = [
     { include = "pluck", from = "src" }
@@ -18,7 +22,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
-pandas = "^1.4.3"
+pandas = ">=1.4"
 graphql-core = "^3.2.1"
 
 [tool.poetry.dev-dependencies]

@@ -24,6 +24,17 @@ class DataFrameLibrary(ABC):
         """
         raise NotImplementedError()
 
+    @abstractmethod
+    def rename(self, df: DataFrame, columns: dict[str, str]) -> DataFrame:
+        """
+        Renames the columns in the data-frame.
+
+        :param df: The data-frame.
+        :param columns: The map of old to new column names.
+        :return: The data-frame with the renamed columns.
+        """
+        raise NotImplementedError()
+
 
 class PandasDataFrameLibrary(DataFrameLibrary):
     """
@@ -32,3 +43,6 @@ class PandasDataFrameLibrary(DataFrameLibrary):
 
     def create(self, data: Records) -> DataFrame:
         return pd.DataFrame(data)
+
+    def rename(self, df: DataFrame, columns: dict[str, str]) -> DataFrame:
+        return df.rename(columns=columns)

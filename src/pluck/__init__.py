@@ -1,9 +1,9 @@
 from . import client
-from ._pluck import create, read_graphql, Response
+from ._pluck import create, execute, Response
 
 __all__ = (
     "create",
-    "read_graphql",
+    "execute",
     "Response",
     "client",
 )
