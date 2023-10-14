@@ -1,5 +1,5 @@
-import glob
 import json
+import importlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict
@@ -11,12 +11,25 @@ import pytest
 import pluck
 
 
-@dataclass
-class Scenario:
+@dataclass(frozen=True)
+class ScenarioInfo:
     name: str
     query: Path
     response: Path
     expected: Path
+    setup_module: str
+
+    def load_query(self):
+        return self.query.read_text()
+
+    def load_response(self):
+        return json.load(self.response.open(encoding="utf-8"))
+
+    def load_setup_module(self):
+        try:
+            return importlib.import_module(self.setup_module)
+        except ModuleNotFoundError:
+            return None
 
 
 def get_scenarios():
@@ -25,18 +38,21 @@ def get_scenarios():
         query = Path(file)
         response = query.with_suffix(".json")
         expected = query.with_suffix(".expected.json")
-        yield query.name, Scenario(query.name, query, response, expected)
+        setup = f"{query.parent.name}.{query.stem}"
+        yield query.name, ScenarioInfo(query.name, query, response, expected, setup)
 
 
 @httpretty.activate
 @pytest.mark.parametrize("name,scenario", get_scenarios())
 def test_scenarios(name, scenario):
     url = "http://api/graphql"
-    query = scenario.query.read_text()
-    response = json.load(scenario.response.open())
+    query = scenario.load_query()
+    response = scenario.load_response()
     httpretty.register_uri(httpretty.POST, url, body=json.dumps(response))
+    setup = scenario.load_setup_module()
+    kwargs = setup.get_kwargs() if setup else {}
 
-    actual = pluck.read_graphql(query, url=url)
+    actual = pluck.read_graphql(query, url=url, **kwargs)
 
     assert actual.data == response.get("data")
     assert actual.errors == response.get("errors")

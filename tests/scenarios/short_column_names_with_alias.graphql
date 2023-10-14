@@ -1,0 +1,21 @@
+{
+  launchesPast @frame {
+    mission_name
+    launch_date: launch_date_local
+    launch_site {
+      site_name_long
+    }
+    rocket {
+      rocket: rocket_name
+      first_stage {
+        cores {
+          flight
+          core {
+            reuse_count
+            status
+          }
+        }
+      }
+    }
+  }
+}

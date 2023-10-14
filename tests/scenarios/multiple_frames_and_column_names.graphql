@@ -1,0 +1,14 @@
+{
+  full: rockets @frame {
+    name
+    engines {
+      type
+    }
+  },
+  short: rockets @frame {
+    name
+    engines {
+      type
+    }
+  }
+}
