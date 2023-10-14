@@ -14,10 +14,11 @@ class GraphQLRequest:
     """
     A GraphQL request.
 
-    :attr url: The GraphQL URL against which to execute the query.
-    :attr query: The GraphQL query.
-    :attr variables: The optional variables for the query.
-    :attr headers: The optional headers for the request.
+    Args:
+        url: The GraphQL URL against which to execute the query.
+        query: The GraphQL query.
+        variables: The optional variables for the query.
+        headers: The optional headers for the request.
     """
 
     url: str
@@ -41,8 +42,9 @@ class GraphQLResponse:
     """
     A GraphQL response.
 
-    :attr data: The data returned by the query.
-    :attr errors: The errors returned by the query.
+    Args:
+        data: The data returned by the query.
+        errors: The errors returned by the query.
     """
 
     data: Union[Dict, List, int, str, bool, None]
@@ -63,8 +65,11 @@ class GraphQLClient(ABC):
         """
         Executes the given GraphQL request.
 
-        :param request: The GraphQL request.
-        :return: The GraphQL response.
+        Args:
+            request: The GraphQL request.
+
+        Returns:
+            The GraphQL response.
         """
         raise NotImplementedError()
 
@@ -73,6 +78,7 @@ class UrllibGraphQLClient(GraphQLClient):
     """
     A GraphQL client that uses urllib to execute requests.
     """
+
     def __init__(self):
         self._serializer = JsonSerializer.create_fastest()
 
@@ -80,8 +86,11 @@ class UrllibGraphQLClient(GraphQLClient):
         """
         Executes the given GraphQL request.
 
-        :param request: The GraphQL request.
-        :return: The GraphQL response.
+        Args:
+            request: The GraphQL request.
+
+        Returns:
+            The GraphQL response.
         """
         body = {"query": request.query}
         if request.variables:
