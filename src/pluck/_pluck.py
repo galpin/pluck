@@ -78,6 +78,7 @@ def create(
             client=client,
         )
 
+    pluck.__doc__ = execute.__doc__
     return pluck
 
 
