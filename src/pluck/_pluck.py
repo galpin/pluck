@@ -43,7 +43,6 @@ def create(
     url: UrlType,
     headers: HeadersType = None,
     separator: str = ".",
-    column_names: Literal["full", "short"] = "full",
     client: GraphQLClient = None,
 ) -> PluckType:
     """
@@ -56,14 +55,6 @@ def create(
             The HTTP headers to set when executing the query.
         separator:
             An optional separator for nested record names (the default is `.`).
-        column_names:
-            An optional specifier for how to format column names (the default is `full`).
-
-            `full` means the column names will be the full path to the field in the GraphQL query.
-            `short` means the column names will be the last part of the path to the field in the GraphQL query.
-            If a conflict between fields is detected, all names will be prefixed with the name of their parent.
-
-            Different modes can be specified using a dictionary (the key is the name of the frame).
         client:
             An optional GqlClient instance to use for executing the query.
 
@@ -71,7 +62,12 @@ def create(
         A Response object. Iterating over the response will yield the data frames.
     """
 
-    def pluck(query: QueryType, variables: VariablesType = None) -> Response:
+    def pluck(
+        query: QueryType,
+        variables: VariablesType = None,
+        *,
+        column_names: ColumnNamesType = None,
+    ) -> Response:
         return execute(
             query,
             variables,

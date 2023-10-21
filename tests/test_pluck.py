@@ -86,6 +86,7 @@ def test_create():
         url=expected_url,
         headers=expected_headers,
         execute=execute,
+        execute_kwargs={"column_names": "short"},
     )
 
 
@@ -98,6 +99,7 @@ def _test_execute(
     verify: Optional[Callable[[HTTPrettyRequest, dict, str, dict], None]] = None,
     url: str = "http://spacex/graphql",
     execute=None,
+    execute_kwargs: Optional[dict] = None,
 ):
     query = query or "{ launch { id } }"
     variables = variables or {}
@@ -114,7 +116,7 @@ def _test_execute(
     if not execute:
         response = pluck.execute(query, variables, url=url, headers=headers)
     else:
-        response = execute(query, variables)
+        response = execute(query, variables, **(execute_kwargs or {}))
 
     assert httpretty.has_request()
     assert response is not None
