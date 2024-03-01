@@ -1,6 +1,6 @@
 import itertools
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
@@ -155,21 +155,51 @@ def rename_long(_, df):
     return df
 
 
-# TODO Replace with implementation that does not require splitting.
 def rename_short(options: ExecutorOptions, df: DataFrame) -> pd.DataFrame:
     separator = options.separator
-    original = df.columns
-    renamed = {}
-    for name in original:
-        parts = name.split(separator)
-        new_name = parts[-1]
-        try:
-            # Name conflict: qualify conflicts with their parents.
-            existing_parts = renamed.pop(new_name)
-            existing_name = ".".join(existing_parts[-2:])
-            renamed[existing_name] = existing_parts
-            new_name = ".".join(parts[-2:])
-        except KeyError:
-            pass
-        renamed[new_name] = parts
-    return options.library.rename(df, columns=dict(zip(original, renamed.keys())))
+    builder = ShortColumnNamesBuilder(separator)
+    for old_name in df.columns:
+        builder.add(old_name)
+    return options.library.rename(df, columns=builder.build())
+
+
+@dataclass(frozen=True)
+class ShortColumn:
+    original_name: str
+    new_name: str
+    parts: List[str]
+
+
+class ShortColumnNamesBuilder:
+    def __init__(self, separator: str):
+        self._separator = separator
+        self._new_to_old = {}
+        self._old_to_new = {}
+
+    def add(self, old_name: str):
+        column = self._create(old_name)
+        if existing := self._get(column):
+            del self._new_to_old[existing.new_name]
+            del self._old_to_new[existing.original_name]
+            existing = self._prepend_parent(existing)
+            self._add(existing)
+        self._add(column)
+
+    def build(self) -> Dict[str, str]:
+        return {v.original_name: v.new_name for v in self._old_to_new.values()}
+
+    def _add(self, item: ShortColumn):
+        self._new_to_old[item.new_name] = item
+        self._old_to_new[item.original_name] = item
+
+    def _prepend_parent(self, item: ShortColumn) -> ShortColumn:
+        parts = item.parts[-2:]
+        new_name = self._separator.join(parts)
+        return replace(item, new_name=new_name, parts=parts)
+
+    def _get(self, item: ShortColumn) -> Optional[ShortColumn]:
+        return self._new_to_old.get(item.new_name)
+
+    def _create(self, name: str) -> ShortColumn:
+        parts = name.split(self._separator)
+        return ShortColumn(name, parts[-1], parts)

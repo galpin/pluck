@@ -1,0 +1,25 @@
+query {
+  launch: launches {
+    id
+    launch_date_local
+    launch_year
+    name: mission_name
+    details
+    rocket {
+      rocket_type
+      second_stage {
+        block
+        payloads {
+          id
+          customers
+        }
+      }
+      name: rocket_name
+      fairings {
+        ship
+        recovered
+      }
+    }
+    launch_date_unix
+  }
+}
