@@ -1,5 +1,8 @@
 # Changes
 
+## 0.3.5
+* Fix: Ensure rename to short column names is invariant to order!
+
 ## 0.3.4
 * Breaking Change: Renames `read_graphql` to `execute`!
 * New: Adds initial support for transforming column names (see README.md for details).
