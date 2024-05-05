@@ -46,7 +46,7 @@ class FrameInfoBuilder:
 
     def add_field(self, path: JsonPath):
         assert path[: len(self.path)] == self.path
-        self.selection_set.add(path[len(self.path):])
+        self.selection_set.add(path[len(self.path) :])
 
     def add_self(self):
         self.selection_set.add(self.path[-1])

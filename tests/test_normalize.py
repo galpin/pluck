@@ -643,7 +643,9 @@ def test_normalize(name, obj, expected):
     ),
 )
 def test_pruning(name, obj, selection_set, expected):
-    actual = normalize(obj, selection_set=set(JsonPath(*x.split(".")) for x in selection_set))
+    actual = normalize(
+        obj, selection_set=set(JsonPath(*x.split(".")) for x in selection_set)
+    )
     assert actual == expected
 
 
