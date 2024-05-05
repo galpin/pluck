@@ -50,7 +50,7 @@ class Executor:
         new_request = request.replace(query=parsed_query.query)
         response = self._execute(new_request)
         extracted = self._extract(parsed_query, response)
-        frames = self._normalize(extracted)
+        frames = self._normalize(extracted, parsed_query)
         frames = self._rename_columns(frames)
         return response.data, response.errors, frames
 
@@ -69,12 +69,29 @@ class Executor:
         return {f.name: found.get(f.name, EMPTY) for f in query.frames}
 
     @timeit
-    def _normalize(self, frame_data: Dict[str, JsonValue]) -> Dict[str, Any]:
+    def _normalize(
+        self,
+        frame_data: Dict[str, JsonValue],
+        query: ParsedQuery,
+    ) -> Dict[str, Any]:
         separator = self._options.separator
         frames = {}
         for name, data in frame_data.items():
+            selection_set = (
+                query.selection_set
+                if query.is_implicit_mode
+                else query.frame(name).selection_set
+            )
             data = itertools.chain(
-                *[normalize(x, separator, fallback=name) for x in data]
+                *[
+                    normalize(
+                        x,
+                        separator,
+                        fallback=name,
+                        selection_set=selection_set,
+                    )
+                    for x in data
+                ]
             )
             frames[name] = self._create_data_frame(data)
         return frames
