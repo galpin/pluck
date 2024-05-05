@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import json
 import importlib
 from dataclasses import dataclass
@@ -65,9 +66,13 @@ def assert_frames(path: Path, actual: Dict[str, pd.DataFrame]):
         json.dump(dto, path.open("w"), indent=True)
         return
 
-    expected = json.load(path.open())
+    with path.open() as f:
+        expected = json.load(f)
     actual = prepare(actual)
-    assert actual == expected
+
+    # Order is significant!
+    # The order determines the __iter__ syntax on the Response.
+    assert OrderedDict(actual) == OrderedDict(expected)
 
 
 def prepare(actual: Dict[str, pd.DataFrame]) -> Dict[str, Dict]:

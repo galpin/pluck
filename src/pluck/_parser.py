@@ -58,32 +58,28 @@ class FrameInfoBuilder:
 class ParsedQueryBuilder:
     def __init__(self):
         self._query = None
-        self._completed_frames = {}
-        self._frames = deque()
+        self._frames = []
+        self._current_frames = deque()
+        self._frame_names = set()
         self._selection_set = set()
 
     def is_current_frame(self, path: JsonPath):
-        return (frame := self.current_frame) and frame.path == path
-
-    @property
-    def current_frame(self):
-        return self._frames[0] if len(self._frames) > 0 else None
+        current = self._current_frames[0] if self._current_frames else None
+        return current and current.path == path
 
     def add_path(self, path: JsonPath):
         self._selection_set.add(path)
-        for frame in self._frames:
+        for frame in self._current_frames:
             frame.add_field(path)
 
     def begin_frame(self, path: JsonPath):
         name = path[-1]
-        if name in self._completed_frames:
-            raise ValueError(f"Duplicate frame name: '{name}'.")
-        self._frames.appendleft(FrameInfoBuilder(path, name))
+        if name in self._frame_names:
+            raise ValueError(f"Duplicate frame name: '{name}'!")
+        self._add_frame(FrameInfoBuilder(path, name))
 
     def end_frame(self):
-        frame = self.current_frame
-        self._completed_frames[frame.name] = frame.build()
-        self._frames.popleft()
+        self._current_frames.popleft()
 
     def set_query(self, query: str):
         self._query = query
@@ -91,9 +87,13 @@ class ParsedQueryBuilder:
     def build(self) -> ParsedQuery:
         return ParsedQuery(
             self._query,
-            list(self._completed_frames.values()),
+            [f.build() for f in self._frames],
             self._selection_set,
         )
+
+    def _add_frame(self, frame: FrameInfoBuilder):
+        self._current_frames.appendleft(frame)
+        self._frames.append(frame)
 
 
 class QueryVisitor(Visitor):
