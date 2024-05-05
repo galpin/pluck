@@ -2,7 +2,7 @@ import dataclasses
 import urllib.request
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 from ._json import JsonSerializer
 
@@ -47,7 +47,7 @@ class GraphQLResponse:
         errors: The errors returned by the query.
     """
 
-    data: Union[Dict, List, int, str, bool, None]
+    data: Optional[Dict]
     errors: Optional[Dict]
 
     @classmethod

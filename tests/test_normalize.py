@@ -2,6 +2,7 @@ import itertools
 
 import pytest
 
+from pluck._json import JsonPath
 from pluck._normalization import normalize
 
 
@@ -480,6 +481,147 @@ def dimensions():
     )
 
 
+def pruning():
+    yield (
+        "Pruning: incomplete branch is pruned rather than treated as a scalar",
+        [
+            {
+                "a": {
+                    "b": "b",
+                    "c": [
+                        {
+                            # This is an incomplete branch not a scalar!
+                            "d": None,
+                        },
+                        {
+                            "d": {
+                                "e": "e",
+                            },
+                        },
+                    ],
+                }
+            }
+        ],
+        [
+            "a.b",
+            "a.c.d.e",
+        ],
+        [
+            {"a.b": "b"},
+            {"a.b": "b", "a.c.d.e": "e"},
+        ],
+    )
+    yield (
+        "Pruning: incomplete branch is pruned rather than treated as a scalar (different order)",
+        [
+            {
+                "a": {
+                    "b": "b",
+                    "c": [
+                        {
+                            "d": {
+                                "e": "e",
+                            },
+                        },
+                        {
+                            # This is an incomplete branch not a scalar!
+                            "d": None,
+                        },
+                    ],
+                }
+            }
+        ],
+        [
+            "a.b",
+            "a.c.d.e",
+        ],
+        [
+            {"a.b": "b", "a.c.d.e": "e"},
+            {"a.b": "b"},
+        ],
+    )
+    yield (
+        "Pruning: incomplete branch is pruned rather than treated as a scalar (repeated)",
+        [
+            {
+                "a": [
+                    {
+                        "b": "b",
+                        "c": [
+                            {
+                                "d": {
+                                    "e": "e",
+                                },
+                            },
+                        ],
+                    },
+                    {
+                        "b": "b",
+                        "c": [
+                            {
+                                "d": {
+                                    "e": "e",
+                                },
+                            },
+                            {
+                                "d": None,
+                            },
+                            {
+                                "d": {
+                                    "e": "e",
+                                },
+                            },
+                            {
+                                "d": None,
+                            },
+                        ],
+                    },
+                ],
+            }
+        ],
+        [
+            "a.b",
+            "a.c.d.e",
+        ],
+        [
+            {"a.b": "b", "a.c.d.e": "e"},
+            {"a.b": "b", "a.c.d.e": "e"},
+            {"a.b": "b"},
+            {"a.b": "b", "a.c.d.e": "e"},
+            {"a.b": "b"},
+        ],
+    )
+    yield (
+        "Pruning: ?",
+        [
+            {
+                "a": {
+                    "b": "b",
+                    "c": [
+                        {
+                            # This is an incomplete branch not a scalar!
+                            "d": None,
+                            "e": "e",
+                        },
+                        {
+                            "d": None,
+                            "e": "e",
+                        },
+                    ],
+                }
+            }
+        ],
+        [
+            "a.b",
+            "a.c.e",
+        ],
+        [
+            {"a.b": "b", "a.c.e": "e"},
+            {"a.b": "b", "a.c.e": "e"},
+        ],
+    )
+
+
 @pytest.mark.parametrize(
     "name, obj, expected",
     itertools.chain(
@@ -491,6 +633,17 @@ def dimensions():
 )
 def test_normalize(name, obj, expected):
     actual = normalize(obj)
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "name, obj, selection_set, expected",
+    itertools.chain(
+        pruning(),
+    ),
+)
+def test_pruning(name, obj, selection_set, expected):
+    actual = normalize(obj, selection_set=set(JsonPath(*x.split(".")) for x in selection_set))
     assert actual == expected
 
 

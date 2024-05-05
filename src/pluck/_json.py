@@ -12,8 +12,20 @@ JsonValue = Union[JsonObject, JsonArray, JsonScalar, None]
 
 
 class JsonPath(tuple):
-    def add(self, value: str):
-        return JsonPath(self + (value,))
+    def __new__(cls, *values: str):
+        return super(JsonPath, cls).__new__(cls, tuple(values))
+
+    def add(self, *values: str) -> JsonPath:
+        return JsonPath(*self, *values)
+
+    def pop_right(self):
+        return JsonPath(*self[:-1])
+
+    def join(self, separator: str) -> str:
+        return separator.join(self)
+
+    def __str__(self):
+        return self.join(".")
 
 
 class JsonVisitorAction(enum.Enum):
