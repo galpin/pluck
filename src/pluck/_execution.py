@@ -21,7 +21,7 @@ from ._decorators import timeit
 from .client import GraphQLClient, GraphQLRequest, GraphQLResponse, UrllibGraphQLClient
 from ._libraries import DataFrame, DataFrameLibrary, PandasDataFrameLibrary
 
-ExecutorResult = Tuple[Dict, List, Dict[str, DataFrame]]
+ExecutorResult = Tuple[Optional[Dict], Optional[List], Dict[str, DataFrame]]
 EMPTY = tuple()
 
 
