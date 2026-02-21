@@ -85,6 +85,7 @@ class ParsedQueryBuilder:
         self._query = query
 
     def build(self) -> ParsedQuery:
+        assert self._query is not None
         return ParsedQuery(
             self._query,
             [f.build() for f in self._frames],

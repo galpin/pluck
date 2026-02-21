@@ -42,7 +42,7 @@ def create(
     url: UrlType,
     headers: HeadersType = None,
     separator: str = ".",
-    client: GraphQLClient = None,
+    client: Optional[GraphQLClient] = None,
 ) -> PluckType:
     """
     Create a pluck function equivalent to `execute` that is pre-configured with the specified options.
@@ -65,7 +65,7 @@ def create(
         query: QueryType,
         variables: VariablesType = None,
         *,
-        column_names: ColumnNamesType = None,
+        column_names: Optional[ColumnNamesType] = None,
     ) -> Response:
         return execute(
             query,
@@ -88,8 +88,8 @@ def execute(
     url: UrlType,
     headers: HeadersType = None,
     separator: str = ".",
-    column_names: ColumnNamesType = None,
-    client: GraphQLClient = None,
+    column_names: Optional[ColumnNamesType] = None,
+    client: Optional[GraphQLClient] = None,
 ) -> Response:
     """
     Execute a GraphQL query and return a Response object.

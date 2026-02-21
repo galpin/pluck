@@ -60,7 +60,7 @@ class JsonVisitor:
         pass
 
 
-def visit(root, visitor: JsonVisitor, initial_path: JsonPath = None):
+def visit(root, visitor: JsonVisitor, initial_path: Optional[JsonPath] = None):
     JsonWalker(visitor).walk(root, initial_path)
 
 
@@ -68,7 +68,7 @@ class JsonWalker:
     def __init__(self, visitor: JsonVisitor):
         self._visitor = visitor
 
-    def walk(self, root: JsonValue, initial_path: JsonPath = None):
+    def walk(self, root: JsonValue, initial_path: Optional[JsonPath] = None):
         stack = deque()
         visitor = self._visitor
 
