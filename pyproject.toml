@@ -35,6 +35,7 @@ dev = [
     "nbconvert>=7.9.2",
     "tabulate>=0.9.0",
     "ruff>=0.4.3",
+    "ty>=0.0.1a7",
 ]
 
 [build-system]
@@ -47,3 +48,15 @@ module-name = "pluck"
 
 [tool.ruff.lint]
 extend-select = ["I"]
+
+[tool.ty.rules]
+# Downgrade pre-existing issues to warnings for gradual adoption
+invalid-parameter-default = "warn"
+unresolved-import = "warn"
+unresolved-attribute = "warn"
+invalid-return-type = "warn"
+not-iterable = "warn"
+invalid-assignment = "warn"
+invalid-argument-type = "warn"
+invalid-context-manager = "warn"
+missing-argument = "warn"

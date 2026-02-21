@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
+from ._decorators import timeit
 from ._json import (
     STOP,
     JsonArray,
@@ -15,11 +16,10 @@ from ._json import (
     JsonVisitor,
     visit,
 )
+from ._libraries import DataFrame, DataFrameLibrary, PandasDataFrameLibrary
 from ._normalization import normalize
 from ._parser import ParsedQuery, QueryParser
-from ._decorators import timeit
 from .client import GraphQLClient, GraphQLRequest, GraphQLResponse, UrllibGraphQLClient
-from ._libraries import DataFrame, DataFrameLibrary, PandasDataFrameLibrary
 
 ExecutorResult = Tuple[Optional[Dict], Optional[List], Dict[str, DataFrame]]
 EMPTY = tuple()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import itertools
 from dataclasses import dataclass, replace
-from typing import Dict, Generator, Iterable, List, Optional, Set, Tuple
+from typing import Dict, Generator, Iterable, List, Optional, Set
 
 from ._json import STOP, JsonArray, JsonPath, JsonScalar, JsonValue, JsonVisitor, visit
 

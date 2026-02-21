@@ -1,10 +1,9 @@
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, List, Callable, Literal, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 from ._execution import Executor, ExecutorOptions
-from .client import GraphQLClient, GraphQLRequest
 from ._libraries import DataFrame
-
+from .client import GraphQLClient, GraphQLRequest
 
 UrlType = str
 HeadersType = Optional[Dict[str, Any]]

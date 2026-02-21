@@ -1,6 +1,6 @@
-from collections import OrderedDict
-import json
 import importlib
+import json
+from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict
