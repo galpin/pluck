@@ -1,11 +1,11 @@
-[tool.poetry]
+[project]
 name = "pluck-graphql"
 version = "0.4.0"
 description = "Transform GraphQL queries into Pandas data-frames."
 readme = "README.md"
-authors = ["Martin Galpin <galpin@gmail.com>"]
-license = "MIT License"
-repository = "https://github.com/galpin/pluck"
+authors = [{ name = "Martin Galpin", email = "galpin@gmail.com" }]
+license = { text = "MIT License" }
+requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3",
@@ -17,30 +17,32 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "Intended Audience :: Developers",
 ]
-packages = [
-    { include = "pluck", from = "src" }
+dependencies = [
+    "pandas>=1.4",
+    "graphql-core>=3.2.1,<4",
 ]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-pandas = ">=1.4"
-graphql-core = "^3.2.1"
+[project.urls]
+Repository = "https://github.com/galpin/pluck"
 
-[tool.poetry.dev-dependencies]
-pytest = "^7.1.2"
-httpretty = "^1.1.4"
-isort = "^5.10.1"
-twine = "^4.0.1"
-
-[tool.poetry.group.dev.dependencies]
-jupyter = "^1.0.0"
-nbconvert = "^7.9.2"
-tabulate = "^0.9.0"
-ruff = "^0.4.3"
+[dependency-groups]
+dev = [
+    "pytest>=7.1.2",
+    "httpretty>=1.1.4",
+    "isort>=5.10.1",
+    "twine>=4.0.1",
+    "jupyter>=1.0.0",
+    "nbconvert>=7.9.2",
+    "tabulate>=0.9.0",
+    "ruff>=0.4.3",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pluck"]
 
 [tool.ruff.lint]
 extend-select = ["I"]
