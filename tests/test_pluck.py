@@ -8,8 +8,6 @@ from httpretty.core import HTTPrettyRequest
 import pluck
 from pluck.client import GraphQLClient, GraphQLRequest, GraphQLResponse
 
-pytestmark = pytest.mark.skip(reason="httpretty is incompatible with this environment")
-
 
 class MockGraphQLClient(GraphQLClient):
     def __init__(self, response: Dict):
