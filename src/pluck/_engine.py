@@ -12,6 +12,9 @@ try:
     from pluck._pluck_engine import extract_frames as _rust_extract_frames
     from pluck._pluck_engine import normalize as _rust_normalize
     from pluck._pluck_engine import normalize_columnar as _rust_normalize_columnar
+    from pluck._pluck_engine import (
+        normalize_columnar_batch as _rust_normalize_columnar_batch,
+    )
 
     _USE_RUST = True
 except ImportError:
@@ -61,6 +64,32 @@ def normalize_columnar(
         for k, v in row.items():
             columns[k].append(v)
     return columns
+
+
+def normalize_columnar_batch(
+    objects: list[Any],
+    separator: str = ".",
+    fallback: str = "?",
+    selection_set: Any = None,
+) -> dict[str, list[Any]]:
+    """Batch normalize: normalizes all objects and returns a single merged columnar dict."""
+    if _USE_RUST:
+        ss = [list(p) for p in selection_set] if selection_set else None
+        return _rust_normalize_columnar_batch(objects, separator, fallback, ss)
+    # Fallback: use single-item normalize_columnar and merge in Python
+    from ._normalization import normalize as _py_normalize
+
+    merged: dict[str, list[Any]] = {}
+    for obj in objects:
+        rows = _py_normalize(
+            obj, separator, fallback=fallback, selection_set=selection_set
+        )
+        for row in rows:
+            for k, v in row.items():
+                if k not in merged:
+                    merged[k] = []
+                merged[k].append(v)
+    return merged
 
 
 def extract_frames(

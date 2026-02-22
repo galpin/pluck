@@ -10,6 +10,7 @@ from ._engine import extract_frames as engine_extract
 from ._engine import has_rust_engine
 from ._engine import normalize as engine_normalize
 from ._engine import normalize_columnar as engine_normalize_columnar
+from ._engine import normalize_columnar_batch as engine_normalize_columnar_batch
 from ._json import (
     STOP,
     JsonArray,
@@ -107,24 +108,16 @@ class Executor:
     def _normalize_columnar(
         self, data: JsonArray, separator: str, name: str, selection_set: Any
     ) -> DataFrame:
-        """Normalize using columnar format for faster DataFrame creation."""
-        columnar_parts = [
-            engine_normalize_columnar(
-                x, separator, fallback=name, selection_set=selection_set
-            )
-            for x in data
-        ]
-        # Merge columnar dicts: concatenate lists for each column
-        if not columnar_parts:
+        """Normalize using batch columnar for faster DataFrame creation."""
+        if not data:
             return self._create_data_frame([])
-        merged: Dict[str, list] = {}
-        for part in columnar_parts:
-            for col, values in part.items():
-                if col not in merged:
-                    merged[col] = []
-                merged[col].extend(values)
+        columnar = engine_normalize_columnar_batch(
+            list(data), separator, fallback=name, selection_set=selection_set
+        )
+        if not columnar:
+            return self._create_data_frame([])
         assert self._options.library is not None
-        return self._options.library.create_from_dict(merged)
+        return self._options.library.create_from_dict(columnar)
 
     @timeit
     def _create_data_frame(self, data) -> DataFrame:

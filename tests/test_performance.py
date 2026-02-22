@@ -111,41 +111,91 @@ def test_normalize_columnar_correctness():
 
 
 @pytest.mark.benchmark
-def test_normalize_performance_comparison():
-    """Side-by-side timing comparison of Python vs Rust (row and columnar)."""
+def test_normalize_columnar_batch_correctness():
+    """Verify batch columnar output matches individual columnar calls merged."""
     try:
-        from pluck._pluck_engine import normalize as rs_normalize
         from pluck._pluck_engine import normalize_columnar as rs_normalize_col
+        from pluck._pluck_engine import (
+            normalize_columnar_batch as rs_normalize_col_batch,
+        )
     except ImportError:
         pytest.skip("Rust engine not available")
 
-    response = generate_large_response(items=50, sub_items=20, sub_sub_items=5)
+    response = generate_large_response(items=10, sub_items=5, sub_sub_items=3)
+    data_items = response["data"]
 
-    # Python: normalize + DataFrame
-    start = time.perf_counter()
-    py_result = py_normalize(response, ".")
-    py_df = pd.DataFrame(py_result)
-    py_time = time.perf_counter() - start
+    # Individual calls merged in Python
+    merged = {}
+    for item in data_items:
+        cols = rs_normalize_col(item, ".", "?", None)
+        for k, v in cols.items():
+            if k not in merged:
+                merged[k] = []
+            merged[k].extend(v)
+    df_individual = pd.DataFrame(merged)
 
-    # Rust row: normalize + DataFrame
-    start = time.perf_counter()
-    rs_result = rs_normalize(response, ".", "?", None)
-    rs_df = pd.DataFrame(rs_result)
-    rs_time = time.perf_counter() - start
+    # Batch call
+    batch_cols = rs_normalize_col_batch(data_items, ".", "?", None)
+    df_batch = pd.DataFrame(batch_cols)
 
-    # Rust columnar: normalize_columnar + DataFrame
-    start = time.perf_counter()
-    rs_col = rs_normalize_col(response, ".", "?", None)
-    rs_col_df = pd.DataFrame(rs_col)
-    rs_col_time = time.perf_counter() - start
+    pd.testing.assert_frame_equal(df_individual, df_batch)
 
-    assert len(py_df) == len(rs_df) == len(rs_col_df)
 
-    speedup_row = py_time / rs_time if rs_time > 0 else float("inf")
-    speedup_col = py_time / rs_col_time if rs_col_time > 0 else float("inf")
-    print(
-        f"\nEnd-to-end (normalize + DataFrame, {len(py_df)} rows):"
-        f"\n  Python:        {py_time:.4f}s"
-        f"\n  Rust row:      {rs_time:.4f}s ({speedup_row:.1f}x)"
-        f"\n  Rust columnar: {rs_col_time:.4f}s ({speedup_col:.1f}x)"
-    )
+@pytest.mark.benchmark
+def test_normalize_performance_comparison():
+    """Side-by-side timing comparison of Python vs Rust (row, columnar, batch)."""
+    try:
+        from pluck._pluck_engine import normalize as rs_normalize
+        from pluck._pluck_engine import normalize_columnar as rs_normalize_col
+        from pluck._pluck_engine import (
+            normalize_columnar_batch as rs_normalize_col_batch,
+        )
+    except ImportError:
+        pytest.skip("Rust engine not available")
+
+    for items, sub_items, sub_sub_items in [(50, 20, 5), (200, 20, 5), (600, 20, 5)]:
+        response = generate_large_response(items=items, sub_items=sub_items, sub_sub_items=sub_sub_items)
+        data_items = response["data"]
+
+        # Python: normalize + DataFrame
+        start = time.perf_counter()
+        py_result = py_normalize(response, ".")
+        py_df = pd.DataFrame(py_result)
+        py_time = time.perf_counter() - start
+
+        # Rust row: normalize + DataFrame
+        start = time.perf_counter()
+        rs_result = rs_normalize(response, ".", "?", None)
+        rs_df = pd.DataFrame(rs_result)
+        rs_time = time.perf_counter() - start
+
+        # Rust columnar: per-item normalize_columnar + merge + DataFrame
+        start = time.perf_counter()
+        merged = {}
+        for item in data_items:
+            cols = rs_normalize_col(item, ".", "?", None)
+            for k, v in cols.items():
+                if k not in merged:
+                    merged[k] = []
+                merged[k].extend(v)
+        rs_col_df = pd.DataFrame(merged)
+        rs_col_time = time.perf_counter() - start
+
+        # Rust batch columnar: single call + DataFrame
+        start = time.perf_counter()
+        batch_cols = rs_normalize_col_batch(data_items, ".", "?", None)
+        rs_batch_df = pd.DataFrame(batch_cols)
+        rs_batch_time = time.perf_counter() - start
+
+        assert len(py_df) == len(rs_df) == len(rs_col_df) == len(rs_batch_df)
+
+        speedup_row = py_time / rs_time if rs_time > 0 else float("inf")
+        speedup_col = py_time / rs_col_time if rs_col_time > 0 else float("inf")
+        speedup_batch = py_time / rs_batch_time if rs_batch_time > 0 else float("inf")
+        print(
+            f"\nEnd-to-end (normalize + DataFrame, {len(py_df)} rows):"
+            f"\n  Python:             {py_time:.4f}s"
+            f"\n  Rust row:           {rs_time:.4f}s ({speedup_row:.1f}x)"
+            f"\n  Rust columnar:      {rs_col_time:.4f}s ({speedup_col:.1f}x)"
+            f"\n  Rust batch columnar:{rs_batch_time:.4f}s ({speedup_batch:.1f}x)"
+        )
