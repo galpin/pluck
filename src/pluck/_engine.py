@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-import itertools
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from ._json import JsonPath, JsonValue
+    from ._json import JsonValue
     from ._parser import ParsedQuery
 
 try:
     from pluck._pluck_engine import extract_frames as _rust_extract_frames
     from pluck._pluck_engine import normalize as _rust_normalize
+    from pluck._pluck_engine import normalize_columnar as _rust_normalize_columnar
 
     _USE_RUST = True
 except ImportError:
@@ -36,6 +36,31 @@ def normalize(
     return _py_normalize(
         obj, separator, fallback=fallback, selection_set=selection_set
     )
+
+
+def normalize_columnar(
+    obj: JsonValue,
+    separator: str = ".",
+    fallback: str = "?",
+    selection_set: Any = None,
+) -> dict[str, list[Any]]:
+    """Normalize and return columnar data {col: [values...]} for fast DataFrame creation."""
+    if _USE_RUST:
+        ss = [list(p) for p in selection_set] if selection_set else None
+        return _rust_normalize_columnar(obj, separator, fallback, ss)
+    # Fallback: use row-oriented normalize and pivot to columnar
+    from ._normalization import normalize as _py_normalize
+
+    rows = _py_normalize(
+        obj, separator, fallback=fallback, selection_set=selection_set
+    )
+    if not rows:
+        return {}
+    columns: dict[str, list[Any]] = {k: [] for k in rows[0]}
+    for row in rows:
+        for k, v in row.items():
+            columns[k].append(v)
+    return columns
 
 
 def extract_frames(

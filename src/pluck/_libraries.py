@@ -14,6 +14,10 @@ class DataFrameLibrary(ABC):
     def create(self, data: Records) -> DataFrame:
         raise NotImplementedError()
 
+    def create_from_dict(self, data: dict[str, list]) -> DataFrame:
+        """Create a DataFrame from columnar data {col_name: [values...]}."""
+        return self.create(data)
+
     @abstractmethod
     def rename(self, df: DataFrame, columns: dict[str, str]) -> DataFrame:
         raise NotImplementedError()
@@ -21,6 +25,9 @@ class DataFrameLibrary(ABC):
 
 class PandasDataFrameLibrary(DataFrameLibrary):
     def create(self, data: Records) -> DataFrame:
+        return pd.DataFrame(data)
+
+    def create_from_dict(self, data: dict[str, list]) -> DataFrame:
         return pd.DataFrame(data)
 
     def rename(self, df: DataFrame, columns: dict[str, str]) -> DataFrame:

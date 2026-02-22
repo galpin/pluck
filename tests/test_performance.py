@@ -5,6 +5,7 @@ Run with: uv run pytest tests/test_performance.py -m benchmark -s
 
 import time
 
+import pandas as pd
 import pytest
 
 from pluck._normalization import normalize as py_normalize
@@ -42,10 +43,9 @@ def generate_large_response(items=100, sub_items=10, sub_sub_items=5):
 def test_normalize_performance_python():
     """Benchmark the pure-Python normalize engine."""
     response = generate_large_response(items=50, sub_items=20, sub_sub_items=5)
-    data = response
 
     start = time.perf_counter()
-    result = py_normalize(data, ".")
+    result = py_normalize(response, ".")
     elapsed = time.perf_counter() - start
 
     assert len(result) > 0
@@ -61,10 +61,9 @@ def test_normalize_performance_rust():
         pytest.skip("Rust engine not available")
 
     response = generate_large_response(items=50, sub_items=20, sub_sub_items=5)
-    data = response
 
     start = time.perf_counter()
-    result = rs_normalize(data, ".", "?", None)
+    result = rs_normalize(response, ".", "?", None)
     elapsed = time.perf_counter() - start
 
     assert len(result) > 0
@@ -80,10 +79,9 @@ def test_normalize_correctness_comparison():
         pytest.skip("Rust engine not available")
 
     response = generate_large_response(items=10, sub_items=5, sub_sub_items=3)
-    data = response
 
-    py_result = py_normalize(data, ".")
-    rs_result = rs_normalize(data, ".", "?", None)
+    py_result = py_normalize(response, ".")
+    rs_result = rs_normalize(response, ".", "?", None)
 
     assert len(py_result) == len(rs_result), (
         f"Row count mismatch: Python={len(py_result)}, Rust={len(rs_result)}"
@@ -93,30 +91,61 @@ def test_normalize_correctness_comparison():
 
 
 @pytest.mark.benchmark
-def test_normalize_performance_comparison():
-    """Side-by-side timing comparison of Python vs Rust."""
+def test_normalize_columnar_correctness():
+    """Verify columnar Rust output matches row-oriented output."""
     try:
         from pluck._pluck_engine import normalize as rs_normalize
+        from pluck._pluck_engine import normalize_columnar as rs_normalize_col
+    except ImportError:
+        pytest.skip("Rust engine not available")
+
+    response = generate_large_response(items=10, sub_items=5, sub_sub_items=3)
+
+    rs_rows = rs_normalize(response, ".", "?", None)
+    rs_cols = rs_normalize_col(response, ".", "?", None)
+
+    df_rows = pd.DataFrame(rs_rows)
+    df_cols = pd.DataFrame(rs_cols)
+
+    pd.testing.assert_frame_equal(df_rows, df_cols)
+
+
+@pytest.mark.benchmark
+def test_normalize_performance_comparison():
+    """Side-by-side timing comparison of Python vs Rust (row and columnar)."""
+    try:
+        from pluck._pluck_engine import normalize as rs_normalize
+        from pluck._pluck_engine import normalize_columnar as rs_normalize_col
     except ImportError:
         pytest.skip("Rust engine not available")
 
     response = generate_large_response(items=50, sub_items=20, sub_sub_items=5)
-    data = response
 
-    # Python
+    # Python: normalize + DataFrame
     start = time.perf_counter()
-    py_result = py_normalize(data, ".")
+    py_result = py_normalize(response, ".")
+    py_df = pd.DataFrame(py_result)
     py_time = time.perf_counter() - start
 
-    # Rust
+    # Rust row: normalize + DataFrame
     start = time.perf_counter()
-    rs_result = rs_normalize(data, ".", "?", None)
+    rs_result = rs_normalize(response, ".", "?", None)
+    rs_df = pd.DataFrame(rs_result)
     rs_time = time.perf_counter() - start
 
-    assert len(py_result) == len(rs_result)
+    # Rust columnar: normalize_columnar + DataFrame
+    start = time.perf_counter()
+    rs_col = rs_normalize_col(response, ".", "?", None)
+    rs_col_df = pd.DataFrame(rs_col)
+    rs_col_time = time.perf_counter() - start
 
-    speedup = py_time / rs_time if rs_time > 0 else float("inf")
+    assert len(py_df) == len(rs_df) == len(rs_col_df)
+
+    speedup_row = py_time / rs_time if rs_time > 0 else float("inf")
+    speedup_col = py_time / rs_col_time if rs_col_time > 0 else float("inf")
     print(
-        f"\nPython: {py_time:.4f}s, Rust: {rs_time:.4f}s, "
-        f"Speedup: {speedup:.1f}x ({len(py_result)} rows)"
+        f"\nEnd-to-end (normalize + DataFrame, {len(py_df)} rows):"
+        f"\n  Python:        {py_time:.4f}s"
+        f"\n  Rust row:      {rs_time:.4f}s ({speedup_row:.1f}x)"
+        f"\n  Rust columnar: {rs_col_time:.4f}s ({speedup_col:.1f}x)"
     )
