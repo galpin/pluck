@@ -30,7 +30,8 @@ After profiling the execution pipeline (`_execution.py:48-55`), the bottlenecks 
 ```
 pluck/
 ├── Cargo.toml                          # NEW — Rust crate configuration
-├── pyproject.toml                      # MODIFIED — dual build backend support
+├── pyproject.toml                      # MODIFIED — maturin build backend (replaces uv_build)
+├── .pre-commit-config.yaml             # EXISTING — ruff + ty hooks (unchanged)
 ├── rust/                               # NEW — Rust source directory
 │   ├── lib.rs                          #   PyO3 module entry point
 │   ├── normalize.rs                    #   Core normalization algorithm
@@ -211,7 +212,9 @@ class Executor:
 
 **File: `pyproject.toml`** (modified)
 
-Update the build system to use maturin while keeping Poetry for dependency management:
+The project currently uses **uv** for dependency management and **uv_build** as the
+build backend. We replace only the build backend with maturin (uv continues to manage
+dependencies and run commands):
 
 ```toml
 [build-system]
@@ -224,29 +227,67 @@ module-name = "pluck._pluck_engine"
 features = ["pyo3/extension-module"]
 ```
 
-Poetry continues to manage dependencies. Development workflow:
-- `maturin develop` — compile Rust extension into the venv
-- `poetry run pytest` — run tests as before
+The `[tool.uv.build-backend]` section is removed (maturin handles this). All other
+sections remain unchanged: `[project]`, `[dependency-groups]`, `[tool.ruff.lint]`,
+`[tool.ty.rules]`.
+
+Development workflow:
+- `uv sync` — install Python dependencies
+- `maturin develop` — compile Rust extension into the current venv
+- `uv run pytest` — run tests as before
 - `maturin build --release` — build optimized wheels for distribution
 
 ### Step 6: CI Updates
 
 **File: `.github/workflows/CI.yml`** (modified)
 
-Add Rust toolchain setup before the test step:
+The CI currently uses uv (via `astral-sh/setup-uv@v5`). Add Rust toolchain and
+maturin steps before the test step:
 
 ```yaml
+steps:
+- uses: actions/checkout@v4
+- name: Install uv
+  uses: astral-sh/setup-uv@v5
+- name: Setup Python
+  run: uv python install ${{ matrix.python-version }}
 - name: Setup Rust
   uses: dtolnay/rust-toolchain@stable
-- name: Install maturin
-  run: pip install maturin
+- name: Install dependencies
+  run: uv sync
 - name: Build Rust extension
-  run: maturin develop --release
+  run: uv run maturin develop --release
 - name: Test
-  run: poetry run pytest
+  run: uv run pytest
+  working-directory: tests
+  env:
+    PYTHONPATH: ../src
+- name: Build
+  if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
+  run: uv run maturin build --release
+- name: Upload
+  uses: actions/upload-artifact@v3
+  if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
+  with:
+    name: packages
+    path: target/wheels/*
 ```
 
-### Step 7: Performance Test
+### Step 7: Pre-commit Compatibility
+
+The existing `.pre-commit-config.yaml` runs:
+1. `ruff-check` — linting (with `--fix`)
+2. `ruff-format` — formatting
+3. `ty check src/` — type checking
+
+New Python files (`_engine.py`) must pass all three. The `ty` checker already has
+`unresolved-import = "warn"` configured in `pyproject.toml`, which handles the
+optional `_pluck_engine` import gracefully (it's a compiled extension that may not
+exist at type-check time).
+
+No changes needed to `.pre-commit-config.yaml`.
+
+### Step 8: Performance Test
 
 **File: `tests/test_performance.py`** (new)
 
@@ -293,7 +334,8 @@ def test_normalize_performance_comparison():
 | PyO3 overhead for small responses negates gains | Benchmark with realistic payloads; Rust engine may add a min-size threshold |
 | `httpretty` test failures in CI | These are environment-specific (sandboxed networking); tests pass in standard CI |
 | Cross-join produces huge intermediate results | Same as Python — this is inherent to the algorithm, not the engine |
-| maturin changes break Poetry workflow | Keep `[tool.poetry]` section; both tools read pyproject.toml independently |
+| maturin replaces uv_build | uv still manages deps; only the wheel-building backend changes |
+| `ty` can't resolve `_pluck_engine` import | Already handled: `unresolved-import = "warn"` in `[tool.ty.rules]` |
 
 ## Files Changed Summary
 
@@ -306,8 +348,8 @@ def test_normalize_performance_comparison():
 | `rust/extract.rs` | **Create** | Frame extraction in Rust |
 | `src/pluck/_engine.py` | **Create** | Engine selection with fallback |
 | `src/pluck/_execution.py` | **Modify** | Delegate to engine module |
-| `pyproject.toml` | **Modify** | Add maturin build backend |
-| `.github/workflows/CI.yml` | **Modify** | Add Rust toolchain + maturin |
+| `pyproject.toml` | **Modify** | Replace uv_build with maturin build backend |
+| `.github/workflows/CI.yml` | **Modify** | Add Rust toolchain + maturin steps |
 | `tests/test_performance.py` | **Create** | Performance comparison benchmark |
 
 **No changes to:**
@@ -318,4 +360,5 @@ def test_normalize_performance_comparison():
 - `src/pluck/_parser.py` — query parsing stays in Python
 - `src/pluck/client.py` — HTTP client stays in Python
 - `src/pluck/_libraries.py` — DataFrame abstraction stays in Python
+- `.pre-commit-config.yaml` — existing hooks work as-is
 - All existing test files — all existing tests continue to pass
