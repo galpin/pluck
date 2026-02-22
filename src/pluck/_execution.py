@@ -6,6 +6,12 @@ from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 
 from ._decorators import timeit
+from ._engine import extract_frames as engine_extract
+from ._engine import has_rust_engine
+from ._engine import normalize as engine_normalize
+from ._engine import normalize_arrow_batch as engine_normalize_arrow_batch
+from ._engine import normalize_columnar as engine_normalize_columnar
+from ._engine import normalize_columnar_batch as engine_normalize_columnar_batch
 from ._json import (
     STOP,
     JsonArray,
@@ -17,7 +23,6 @@ from ._json import (
     visit,
 )
 from ._libraries import DataFrame, DataFrameLibrary, PandasDataFrameLibrary
-from ._normalization import normalize
 from ._parser import ParsedQuery, QueryParser
 from .client import GraphQLClient, GraphQLRequest, GraphQLResponse, UrllibGraphQLClient
 
@@ -64,10 +69,7 @@ class Executor:
     def _extract(query: ParsedQuery, response: GraphQLResponse) -> Dict[str, JsonArray]:
         if query.is_implicit_mode:
             return {"default": [response.data]}
-        context = FrameExtractorContext(query)
-        visit(response.data, FrameExtractor(context))
-        found = context.frame_data
-        return {f.name: found.get(f.name, EMPTY) for f in query.frames}
+        return engine_extract(response.data, query)
 
     @timeit
     def _normalize(
@@ -76,6 +78,7 @@ class Executor:
         query: ParsedQuery,
     ) -> Dict[str, Any]:
         separator = self._options.separator
+        use_columnar = has_rust_engine()
         frames = {}
         for name, data in frame_data.items():
             selection_set = (
@@ -83,19 +86,39 @@ class Executor:
                 if query.is_implicit_mode
                 else query.frame(name).selection_set
             )
-            data = itertools.chain(
-                *[
-                    normalize(
-                        x,
-                        separator,
-                        fallback=name,
-                        selection_set=selection_set,
-                    )
-                    for x in data
-                ]
-            )
-            frames[name] = self._create_data_frame(data)
+            if use_columnar:
+                frames[name] = self._normalize_columnar(
+                    data, separator, name, selection_set
+                )
+            else:
+                rows = itertools.chain(
+                    *[
+                        engine_normalize(
+                            x,
+                            separator,
+                            fallback=name,
+                            selection_set=selection_set,
+                        )
+                        for x in data
+                    ]
+                )
+                frames[name] = self._create_data_frame(rows)
         return frames
+
+    @timeit
+    def _normalize_columnar(
+        self, data: JsonArray, separator: str, name: str, selection_set: Any
+    ) -> DataFrame:
+        """Normalize using Arrow for fastest DataFrame creation."""
+        if not data:
+            return self._create_data_frame([])
+        record_batch = engine_normalize_arrow_batch(
+            list(data), separator, fallback=name, selection_set=selection_set
+        )
+        if record_batch.num_rows == 0:
+            return self._create_data_frame([])
+        assert self._options.library is not None
+        return self._options.library.create_from_arrow(record_batch)
 
     @timeit
     def _create_data_frame(self, data) -> DataFrame:

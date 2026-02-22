@@ -1,0 +1,13 @@
+[package]
+name = "pluck-engine"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "_pluck_engine"
+path = "rust/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.24", features = ["extension-module"] }
+arrow = { version = "55", default-features = false, features = ["pyarrow"] }
