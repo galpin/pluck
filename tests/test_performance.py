@@ -142,10 +142,51 @@ def test_normalize_columnar_batch_correctness():
 
 
 @pytest.mark.benchmark
+def test_normalize_arrow_batch_correctness():
+    """Verify Arrow batch output matches columnar batch output."""
+    try:
+        from pluck._pluck_engine import (
+            normalize_arrow_batch as rs_normalize_arrow,
+        )
+        from pluck._pluck_engine import (
+            normalize_columnar_batch as rs_normalize_col_batch,
+        )
+    except ImportError:
+        pytest.skip("Rust engine not available")
+
+    response = generate_large_response(items=10, sub_items=5, sub_sub_items=3)
+    data_items = response["data"]
+
+    # Columnar batch → DataFrame
+    batch_cols = rs_normalize_col_batch(data_items, ".", "?", None)
+    df_columnar = pd.DataFrame(batch_cols)
+
+    # Arrow batch → DataFrame
+    arrow_batch = rs_normalize_arrow(data_items, ".", "?", None)
+    df_arrow = arrow_batch.to_pandas()
+
+    # Compare: columns should match
+    assert list(df_columnar.columns) == list(df_arrow.columns)
+    assert len(df_columnar) == len(df_arrow)
+    for col in df_columnar.columns:
+        for i in range(len(df_columnar)):
+            py_val = df_columnar.iloc[i][col]
+            arrow_val = df_arrow.iloc[i][col]
+            if pd.isna(py_val) and pd.isna(arrow_val):
+                continue
+            assert py_val == arrow_val, (
+                f"Row {i}, col {col}: columnar={py_val!r}, arrow={arrow_val!r}"
+            )
+
+
+@pytest.mark.benchmark
 def test_normalize_performance_comparison():
-    """Side-by-side timing comparison of Python vs Rust (row, columnar, batch)."""
+    """Side-by-side timing comparison of Python vs Rust (row, columnar, batch, arrow)."""
     try:
         from pluck._pluck_engine import normalize as rs_normalize
+        from pluck._pluck_engine import (
+            normalize_arrow_batch as rs_normalize_arrow,
+        )
         from pluck._pluck_engine import normalize_columnar as rs_normalize_col
         from pluck._pluck_engine import (
             normalize_columnar_batch as rs_normalize_col_batch,
@@ -154,7 +195,9 @@ def test_normalize_performance_comparison():
         pytest.skip("Rust engine not available")
 
     for items, sub_items, sub_sub_items in [(50, 20, 5), (200, 20, 5), (600, 20, 5)]:
-        response = generate_large_response(items=items, sub_items=sub_items, sub_sub_items=sub_sub_items)
+        response = generate_large_response(
+            items=items, sub_items=sub_items, sub_sub_items=sub_sub_items
+        )
         data_items = response["data"]
 
         # Python: normalize + DataFrame
@@ -169,33 +212,27 @@ def test_normalize_performance_comparison():
         rs_df = pd.DataFrame(rs_result)
         rs_time = time.perf_counter() - start
 
-        # Rust columnar: per-item normalize_columnar + merge + DataFrame
-        start = time.perf_counter()
-        merged = {}
-        for item in data_items:
-            cols = rs_normalize_col(item, ".", "?", None)
-            for k, v in cols.items():
-                if k not in merged:
-                    merged[k] = []
-                merged[k].extend(v)
-        rs_col_df = pd.DataFrame(merged)
-        rs_col_time = time.perf_counter() - start
-
         # Rust batch columnar: single call + DataFrame
         start = time.perf_counter()
         batch_cols = rs_normalize_col_batch(data_items, ".", "?", None)
         rs_batch_df = pd.DataFrame(batch_cols)
         rs_batch_time = time.perf_counter() - start
 
-        assert len(py_df) == len(rs_df) == len(rs_col_df) == len(rs_batch_df)
+        # Rust Arrow: single call + zero-copy → DataFrame
+        start = time.perf_counter()
+        arrow_batch = rs_normalize_arrow(data_items, ".", "?", None)
+        rs_arrow_df = arrow_batch.to_pandas()
+        rs_arrow_time = time.perf_counter() - start
+
+        assert len(py_df) == len(rs_df) == len(rs_batch_df) == len(rs_arrow_df)
 
         speedup_row = py_time / rs_time if rs_time > 0 else float("inf")
-        speedup_col = py_time / rs_col_time if rs_col_time > 0 else float("inf")
         speedup_batch = py_time / rs_batch_time if rs_batch_time > 0 else float("inf")
+        speedup_arrow = py_time / rs_arrow_time if rs_arrow_time > 0 else float("inf")
         print(
             f"\nEnd-to-end (normalize + DataFrame, {len(py_df)} rows):"
             f"\n  Python:             {py_time:.4f}s"
             f"\n  Rust row:           {rs_time:.4f}s ({speedup_row:.1f}x)"
-            f"\n  Rust columnar:      {rs_col_time:.4f}s ({speedup_col:.1f}x)"
             f"\n  Rust batch columnar:{rs_batch_time:.4f}s ({speedup_batch:.1f}x)"
+            f"\n  Rust Arrow:         {rs_arrow_time:.4f}s ({speedup_arrow:.1f}x)"
         )

@@ -13,6 +13,9 @@ try:
     from pluck._pluck_engine import normalize as _rust_normalize
     from pluck._pluck_engine import normalize_columnar as _rust_normalize_columnar
     from pluck._pluck_engine import (
+        normalize_arrow_batch as _rust_normalize_arrow_batch,
+    )
+    from pluck._pluck_engine import (
         normalize_columnar_batch as _rust_normalize_columnar_batch,
     )
 
@@ -90,6 +93,27 @@ def normalize_columnar_batch(
                     merged[k] = []
                 merged[k].append(v)
     return merged
+
+
+def normalize_arrow_batch(
+    objects: list[Any],
+    separator: str = ".",
+    fallback: str = "?",
+    selection_set: Any = None,
+) -> Any:
+    """Batch normalize and return a PyArrow RecordBatch (zero-copy from Rust)."""
+    if _USE_RUST:
+        ss = [list(p) for p in selection_set] if selection_set else None
+        return _rust_normalize_arrow_batch(objects, separator, fallback, ss)
+    # Fallback: use columnar batch and convert to arrow
+    import pyarrow as pa
+
+    columnar = normalize_columnar_batch(
+        objects, separator, fallback=fallback, selection_set=selection_set
+    )
+    if not columnar:
+        return pa.record_batch([])
+    return pa.RecordBatch.from_pydict(columnar)
 
 
 def extract_frames(

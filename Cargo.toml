@@ -10,3 +10,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.24", features = ["extension-module"] }
+arrow = { version = "55", default-features = false, features = ["pyarrow"] }

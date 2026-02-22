@@ -9,6 +9,7 @@ from ._decorators import timeit
 from ._engine import extract_frames as engine_extract
 from ._engine import has_rust_engine
 from ._engine import normalize as engine_normalize
+from ._engine import normalize_arrow_batch as engine_normalize_arrow_batch
 from ._engine import normalize_columnar as engine_normalize_columnar
 from ._engine import normalize_columnar_batch as engine_normalize_columnar_batch
 from ._json import (
@@ -108,16 +109,16 @@ class Executor:
     def _normalize_columnar(
         self, data: JsonArray, separator: str, name: str, selection_set: Any
     ) -> DataFrame:
-        """Normalize using batch columnar for faster DataFrame creation."""
+        """Normalize using Arrow for fastest DataFrame creation."""
         if not data:
             return self._create_data_frame([])
-        columnar = engine_normalize_columnar_batch(
+        record_batch = engine_normalize_arrow_batch(
             list(data), separator, fallback=name, selection_set=selection_set
         )
-        if not columnar:
+        if record_batch.num_rows == 0:
             return self._create_data_frame([])
         assert self._options.library is not None
-        return self._options.library.create_from_dict(columnar)
+        return self._options.library.create_from_arrow(record_batch)
 
     @timeit
     def _create_data_frame(self, data) -> DataFrame:

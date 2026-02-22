@@ -73,7 +73,7 @@ fn value_to_py(py: Python<'_>, val: &Value) -> PyObject {
 }
 
 /// Row = list of (column_name, value) pairs. Rc<str> avoids cloning strings during cross-join.
-type Row = Vec<(Rc<str>, Value)>;
+pub type Row = Vec<(Rc<str>, Value)>;
 
 /// Normalize a JSON-like Python object into a list of flat dicts (records).
 /// Kept for compatibility — prefer `normalize_columnar_batch` for better performance.
@@ -201,16 +201,16 @@ fn prepare(
     (opts, value)
 }
 
-struct NormalizeOpts {
-    separator: Rc<str>,
-    fallback: Rc<str>,
-    selection_set: Option<HashSet<Vec<Rc<str>>>>,
+pub struct NormalizeOpts {
+    pub separator: Rc<str>,
+    pub fallback: Rc<str>,
+    pub selection_set: Option<HashSet<Vec<Rc<str>>>>,
 }
 
 /// Pure Rust normalization. No Python interaction.
 /// Uses a mutable path_stack (push/pop) instead of allocating new Vecs per level.
 /// Uses a name_cache to avoid recomputing generate_name for the same path.
-fn normalize_value(
+pub fn normalize_value(
     val: &Value,
     opts: &NormalizeOpts,
     path_stack: &mut Vec<Rc<str>>,
