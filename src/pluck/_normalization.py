@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import itertools
 from dataclasses import dataclass, replace
-from typing import Dict, Generator, Iterable, List, Optional, Set, Tuple
+from typing import Dict, Generator, Iterable, List, Optional, Set
 
 from ._json import STOP, JsonArray, JsonPath, JsonScalar, JsonValue, JsonVisitor, visit
 
@@ -24,7 +24,7 @@ def normalize(
 @dataclass(frozen=True)
 class JsonNormalizerOptions:
     separator: str
-    fallback: str
+    fallback: str | None
     initial_path: Optional[JsonPath] = None
     selection_set: Optional[Set[JsonPath]] = None
 
@@ -52,7 +52,7 @@ class JsonNormalizer:
 class JsonNormalizerContext:
     def __init__(self, options: JsonNormalizerOptions):
         self._options = options
-        self._rows: List[JsonValue] = [{}]
+        self._rows: list[dict[str, JsonValue]] = [{}]
         self._paths: Set[JsonPath] = set()
 
     @property
@@ -60,7 +60,7 @@ class JsonNormalizerContext:
         return self._options
 
     @property
-    def rows(self) -> List[JsonValue]:
+    def rows(self) -> list[dict[str, JsonValue]]:
         return self._rows
 
     @property
@@ -86,8 +86,8 @@ class JsonNormalizerContext:
         return result
 
     def cross_join(self, other: Generator):
-        if other := _spy(other):
-            self._rows = [x | y for x, y in itertools.product(self._rows, other)]
+        if spied := _spy(other):
+            self._rows = [x | y for x, y in itertools.product(self._rows, spied)]
 
 
 class JsonNormalizerVisitor(JsonVisitor):

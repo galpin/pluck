@@ -1,10 +1,9 @@
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, List, Callable, Literal, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 from ._execution import Executor, ExecutorOptions
-from .client import GraphQLClient, GraphQLRequest
 from ._libraries import DataFrame
-
+from .client import GraphQLClient, GraphQLRequest
 
 UrlType = str
 HeadersType = Optional[Dict[str, Any]]
@@ -43,7 +42,7 @@ def create(
     url: UrlType,
     headers: HeadersType = None,
     separator: str = ".",
-    client: GraphQLClient = None,
+    client: Optional[GraphQLClient] = None,
 ) -> PluckType:
     """
     Create a pluck function equivalent to `execute` that is pre-configured with the specified options.
@@ -66,7 +65,7 @@ def create(
         query: QueryType,
         variables: VariablesType = None,
         *,
-        column_names: ColumnNamesType = None,
+        column_names: Optional[ColumnNamesType] = None,
     ) -> Response:
         return execute(
             query,
@@ -89,8 +88,8 @@ def execute(
     url: UrlType,
     headers: HeadersType = None,
     separator: str = ".",
-    column_names: ColumnNamesType = None,
-    client: GraphQLClient = None,
+    column_names: Optional[ColumnNamesType] = None,
+    client: Optional[GraphQLClient] = None,
 ) -> Response:
     """
     Execute a GraphQL query and return a Response object.

@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
+from ._decorators import timeit
 from ._json import (
     STOP,
     JsonArray,
@@ -15,21 +16,20 @@ from ._json import (
     JsonVisitor,
     visit,
 )
+from ._libraries import DataFrame, DataFrameLibrary, PandasDataFrameLibrary
 from ._normalization import normalize
 from ._parser import ParsedQuery, QueryParser
-from ._decorators import timeit
 from .client import GraphQLClient, GraphQLRequest, GraphQLResponse, UrllibGraphQLClient
-from ._libraries import DataFrame, DataFrameLibrary, PandasDataFrameLibrary
 
 ExecutorResult = Tuple[Optional[Dict], Optional[List], Dict[str, DataFrame]]
-EMPTY = tuple()
+EMPTY: JsonArray = []
 
 
 @dataclass
 class ExecutorOptions:
     separator: str
     client: Optional[GraphQLClient]
-    column_names: Optional[str]
+    column_names: Any
     library: Optional[DataFrameLibrary] = field(default=None)
 
     def __post_init__(self):
@@ -56,11 +56,12 @@ class Executor:
 
     @timeit
     def _execute(self, new_request):
+        assert self._options.client is not None
         return self._options.client.execute(new_request)
 
     @staticmethod
     @timeit
-    def _extract(query: ParsedQuery, response: GraphQLResponse) -> Dict[str, JsonValue]:
+    def _extract(query: ParsedQuery, response: GraphQLResponse) -> Dict[str, JsonArray]:
         if query.is_implicit_mode:
             return {"default": [response.data]}
         context = FrameExtractorContext(query)
@@ -71,7 +72,7 @@ class Executor:
     @timeit
     def _normalize(
         self,
-        frame_data: Dict[str, JsonValue],
+        frame_data: Dict[str, JsonArray],
         query: ParsedQuery,
     ) -> Dict[str, Any]:
         separator = self._options.separator
@@ -98,6 +99,7 @@ class Executor:
 
     @timeit
     def _create_data_frame(self, data) -> DataFrame:
+        assert self._options.library is not None
         return self._options.library.create(data)
 
     @timeit
@@ -177,6 +179,7 @@ def rename_short(options: ExecutorOptions, df: DataFrame) -> pd.DataFrame:
     builder = ShortColumnNamesBuilder(separator)
     for old_name in df.columns:
         builder.add(old_name)
+    assert options.library is not None
     return options.library.rename(df, columns=builder.build())
 
 

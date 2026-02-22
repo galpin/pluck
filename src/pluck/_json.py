@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 from abc import ABC, abstractmethod
 from collections import deque
-from typing import Any, Dict, List, Optional, Union, TextIO
+from typing import Any, Dict, List, Optional, TextIO, Union
 
 JsonObject = Dict[str, Any]
 JsonArray = List[Any]
@@ -60,7 +60,7 @@ class JsonVisitor:
         pass
 
 
-def visit(root, visitor: JsonVisitor, initial_path: JsonPath = None):
+def visit(root, visitor: JsonVisitor, initial_path: Optional[JsonPath] = None):
     JsonWalker(visitor).walk(root, initial_path)
 
 
@@ -68,7 +68,7 @@ class JsonWalker:
     def __init__(self, visitor: JsonVisitor):
         self._visitor = visitor
 
-    def walk(self, root: JsonValue, initial_path: JsonPath = None):
+    def walk(self, root: JsonValue, initial_path: Optional[JsonPath] = None):
         stack = deque()
         visitor = self._visitor
 
@@ -120,12 +120,10 @@ class JsonSerializer(ABC):
     @staticmethod
     def create_fastest() -> JsonSerializer:
         try:
-            import orjson
+            import orjson  # noqa: F401
 
             return OrJsonSerializer()
         except ImportError:
-            import json
-
             return BuiltinJsonSerializer()
 
     @abstractmethod
