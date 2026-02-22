@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 
 from ._decorators import timeit
+from ._engine import extract_frames as engine_extract
+from ._engine import normalize as engine_normalize
 from ._json import (
     STOP,
     JsonArray,
@@ -17,7 +19,6 @@ from ._json import (
     visit,
 )
 from ._libraries import DataFrame, DataFrameLibrary, PandasDataFrameLibrary
-from ._normalization import normalize
 from ._parser import ParsedQuery, QueryParser
 from .client import GraphQLClient, GraphQLRequest, GraphQLResponse, UrllibGraphQLClient
 
@@ -64,10 +65,7 @@ class Executor:
     def _extract(query: ParsedQuery, response: GraphQLResponse) -> Dict[str, JsonArray]:
         if query.is_implicit_mode:
             return {"default": [response.data]}
-        context = FrameExtractorContext(query)
-        visit(response.data, FrameExtractor(context))
-        found = context.frame_data
-        return {f.name: found.get(f.name, EMPTY) for f in query.frames}
+        return engine_extract(response.data, query)
 
     @timeit
     def _normalize(
@@ -85,7 +83,7 @@ class Executor:
             )
             data = itertools.chain(
                 *[
-                    normalize(
+                    engine_normalize(
                         x,
                         separator,
                         fallback=name,

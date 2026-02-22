@@ -40,12 +40,16 @@ dev = [
 ]
 
 [build-system]
-requires = ["uv_build>=0.7.2,<1"]
-build-backend = "uv_build"
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
 
-[tool.uv.build-backend]
-module-root = "src"
-module-name = "pluck"
+[tool.maturin]
+python-source = "src"
+module-name = "pluck._pluck_engine"
+features = ["pyo3/extension-module"]
+
+[tool.pytest.ini_options]
+markers = ["benchmark: performance benchmark tests"]
 
 [tool.ruff.lint]
 extend-select = ["I"]
