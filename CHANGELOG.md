@@ -9,6 +9,8 @@ By default it uses a cheap, single-shot generator (one LLM call, with the query 
 
 The default generators are built on [smolagents](https://github.com/huggingface/smolagents), an optional dependency installed with `pip install "pluck-graphql[llm]"`. Any model supported by smolagents can be used, and the `QueryGenerator` abstraction allows plugging in a completely custom engine.
 
+The schema is placed in a stable system-message prefix (ahead of the question) so that providers supporting prompt caching can cache it. `create` introspects the schema once and reuses it across calls, and `ask` accepts a pre-introspected `schema` to skip the round-trip.
+
 ## 0.4.0
 * Fix: Only fields that are within the selection set of the original query are now returned as columns.
 

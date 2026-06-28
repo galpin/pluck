@@ -110,6 +110,8 @@ def create(
             client=client,
         )
 
+    schema_cache: Dict[str, str] = {}
+
     def pluck_ask(
         question: str,
         *,
@@ -117,6 +119,11 @@ def create(
         generator: Optional[QueryGenerator] = generator,
         fallback: FallbackType = fallback,
     ) -> Response:
+        # Introspect once and reuse the schema across calls (avoids the round-trip
+        # and keeps the prompt prefix byte-identical for LLM prompt caching).
+        if "sdl" not in schema_cache:
+            introspect_client = client or UrllibGraphQLClient()
+            schema_cache["sdl"] = introspect_schema(introspect_client, url, headers)
         return ask(
             question,
             url=url,
@@ -126,6 +133,7 @@ def create(
             client=client,
             generator=generator,
             fallback=fallback,
+            schema=schema_cache["sdl"],
         )
 
     pluck.__doc__ = execute.__doc__
@@ -188,6 +196,7 @@ def ask(
     client: Optional[GraphQLClient] = None,
     generator: Optional[QueryGenerator] = None,
     fallback: FallbackType = None,
+    schema: Optional[str] = None,
 ) -> Response:
     """
     Answer a natural-language question by generating and executing a GraphQL query.
@@ -225,6 +234,11 @@ def ask(
 
             The default generators require the optional `smolagents` dependency
             (`pip install "pluck-graphql[llm]"`).
+        schema:
+            The schema of the target API, as SDL. If omitted, the API is
+            introspected. Supplying a previously-introspected schema avoids the
+            round-trip (and keeps the prompt prefix byte-identical, which helps
+            LLM prompt caching). `create` reuses the schema automatically.
 
     Returns:
         A Response object. Iterating over the response will yield the data frames.
@@ -233,7 +247,8 @@ def ask(
     primary = generator or SingleShotQueryGenerator()
     if fallback is None:
         fallback = AgenticQueryGenerator()
-    schema = introspect_schema(client, url, headers)
+    if schema is None:
+        schema = introspect_schema(client, url, headers)
 
     def run_query(raw_query: str) -> GraphQLResponse:
         try:

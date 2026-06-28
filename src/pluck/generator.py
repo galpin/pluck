@@ -148,17 +148,20 @@ class AgenticQueryGenerator(QueryGenerator):
 
 
 def _generate_single_shot(
-    complete: Callable[[str], str],
+    complete: Callable[[str, str], str],
     question: str,
     schema: str,
     max_attempts: int = 2,
 ) -> str:
+    # The system message (instructions + schema) is identical on every attempt and
+    # across calls, so it forms a stable prefix that LLM providers can cache. Only
+    # the user message (the question and any validation errors) varies.
+    system = _build_single_shot_system(schema)
     errors: Optional[List[str]] = None
     query = ""
     for _ in range(max(1, max_attempts)):
-        query = _extract_query(
-            complete(_build_single_shot_prompt(question, schema, errors))
-        )
+        user = _build_single_shot_user(question, errors)
+        query = _extract_query(complete(system, user))
         errors = _validate_query(schema, query)
         if not errors:
             return query
@@ -213,12 +216,9 @@ def _format_response(response: GraphQLResponse) -> str:
     return text
 
 
-def _build_single_shot_prompt(
-    question: str,
-    schema: str,
-    errors: Optional[List[str]] = None,
-) -> str:
-    prompt = f"""\
+def _build_single_shot_system(schema: str) -> str:
+    # Stable, cache-friendly prefix: instructions + the (large) schema only.
+    return f"""\
 You are an expert at writing GraphQL queries. Write a single GraphQL query that
 answers the user's question using the schema below.
 
@@ -227,19 +227,20 @@ answers the user's question using the schema below.
 Return ONLY the final GraphQL query, with no explanation or commentary.
 
 # Schema (SDL)
-{schema}
+{schema}"""
 
-# Question
-{question}
-"""
+
+def _build_single_shot_user(question: str, errors: Optional[List[str]] = None) -> str:
+    # Variable part of the prompt: the question and any validation errors.
+    user = f"# Question\n{question}"
     if errors:
         joined = "\n".join(f"  - {error}" for error in errors)
-        prompt += (
-            "\n# Your previous attempt was invalid\n"
+        user += (
+            "\n\n# Your previous attempt was invalid\n"
             "Fix these validation errors and return a corrected query:\n"
-            f"{joined}\n"
+            f"{joined}"
         )
-    return prompt
+    return user
 
 
 def _build_agentic_task(question: str, schema: str) -> str:
@@ -275,9 +276,9 @@ def _extract_query(text: str) -> str:
     return text
 
 
-def _resolve_complete(model: Any) -> Callable[[str], str]:
+def _resolve_complete(model: Any) -> Callable[[str, str], str]:
     resolved = _resolve_model(model)
-    return lambda prompt: _smol_complete(resolved, prompt)
+    return lambda system, user: _smol_complete(resolved, system, user)
 
 
 def _resolve_model(model: Any) -> Any:
@@ -286,8 +287,13 @@ def _resolve_model(model: Any) -> Any:
     return _import_smolagents().make_default_model()
 
 
-def _smol_complete(model: Any, prompt: str) -> str:
-    messages = [{"role": "user", "content": prompt}]
+def _smol_complete(model: Any, system: str, user: str) -> str:
+    # Send the schema-bearing instructions as a separate system message so the
+    # provider can cache it as a stable prefix across attempts and calls.
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user},
+    ]
     result = model.generate(messages) if hasattr(model, "generate") else model(messages)
     content = getattr(result, "content", result)
     return content if isinstance(content, str) else str(content)

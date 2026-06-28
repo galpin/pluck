@@ -9,7 +9,8 @@ from pluck.generator import (
     GenerateRequest,
     QueryGenerator,
     SingleShotQueryGenerator,
-    _build_single_shot_prompt,
+    _build_single_shot_system,
+    _build_single_shot_user,
     _extract_query,
     _generate_single_shot,
     _validate_query,
@@ -247,20 +248,27 @@ def test_extract_query_passthrough_when_no_fence():
     assert _extract_query("  { launches { id } }  ") == "{ launches { id } }"
 
 
-def test_build_single_shot_prompt_includes_schema_question_and_frame_docs():
-    prompt = _build_single_shot_prompt("my question", "type Query { a: Int }")
+def test_single_shot_system_holds_schema_and_frame_docs():
+    # The schema lives in the stable system message (the cacheable prefix), not
+    # the user message.
+    system = _build_single_shot_system("type Query { a: Int }")
 
-    assert "my question" in prompt
-    assert "type Query { a: Int }" in prompt
-    assert "@frame" in prompt
-    # The single-shot prompt must not mention the agent's tool.
-    assert "execute_graphql" not in prompt
+    assert "type Query { a: Int }" in system
+    assert "@frame" in system
+    assert "execute_graphql" not in system  # single-shot must not mention the tool
 
 
-def test_build_single_shot_prompt_includes_errors_on_retry():
-    prompt = _build_single_shot_prompt("q", SCHEMA, ["Cannot query field 'nope'."])
+def test_single_shot_user_holds_question_not_schema():
+    user = _build_single_shot_user("my question")
 
-    assert "Cannot query field 'nope'." in prompt
+    assert "my question" in user
+    assert "type Query" not in user  # the schema is not duplicated into the user turn
+
+
+def test_single_shot_user_includes_errors_on_retry():
+    user = _build_single_shot_user("q", ["Cannot query field 'nope'."])
+
+    assert "Cannot query field 'nope'." in user
 
 
 # --- local validation ---
@@ -288,8 +296,8 @@ def test_validate_query_ignores_frame_directive():
 def test_single_shot_returns_first_valid():
     calls = []
 
-    def complete(prompt):
-        calls.append(prompt)
+    def complete(system, user):
+        calls.append((system, user))
         return "{ launches { mission_name } }"
 
     query = _generate_single_shot(complete, QUESTION, SCHEMA, max_attempts=2)
@@ -298,11 +306,11 @@ def test_single_shot_returns_first_valid():
     assert len(calls) == 1
 
 
-def test_single_shot_retries_on_invalid():
+def test_single_shot_retries_with_stable_system_and_errors_in_user():
     calls = []
 
-    def complete(prompt):
-        calls.append(prompt)
+    def complete(system, user):
+        calls.append((system, user))
         if len(calls) == 1:
             return "{ launches { nope } }"  # invalid -> triggers a retry
         return "{ launches { mission_name } }"
@@ -311,14 +319,17 @@ def test_single_shot_retries_on_invalid():
 
     assert query == "{ launches { mission_name } }"
     assert len(calls) == 2
-    assert "previous attempt was invalid" in calls[1]
+    # The system message (cacheable prefix) is identical across attempts; only the
+    # user message changes, carrying the validation errors.
+    assert calls[0][0] == calls[1][0]
+    assert "previous attempt was invalid" in calls[1][1]
 
 
 def test_single_shot_gives_up_after_max_attempts():
     calls = []
 
-    def complete(prompt):
-        calls.append(prompt)
+    def complete(system, user):
+        calls.append((system, user))
         return "{ launches { nope } }"  # always invalid
 
     query = _generate_single_shot(complete, QUESTION, SCHEMA, max_attempts=3)
@@ -409,6 +420,34 @@ def test_create_ask_forwards_fallback():
 
     assert response.query == GOOD_FALLBACK_QUERY
     assert fallback.call_count == 1
+
+
+# --- schema reuse (prompt caching) ---
+
+
+def test_ask_uses_supplied_schema_without_introspecting():
+    generator = FakeQueryGenerator()
+    client = MockGraphQLClient()
+
+    response = pluck.ask(
+        QUESTION, url=URL, client=client, generator=generator, schema=SCHEMA
+    )
+
+    assert client.introspection_requests == []  # no introspection round-trip
+    assert generator.request is not None
+    assert generator.request.schema == SCHEMA
+    assert list(response.frames.keys()) == ["launches"]
+
+
+def test_create_ask_introspects_schema_once_across_calls():
+    client = MockGraphQLClient()
+    created = pluck.create(url=URL, client=client, generator=FakeQueryGenerator())
+
+    created.ask(QUESTION)
+    created.ask(QUESTION)
+
+    assert len(client.introspection_requests) == 1  # introspected once, then reused
+    assert len(client.data_requests) == 2  # one execution per call
 
 
 def test_default_generators_raise_without_dependency():

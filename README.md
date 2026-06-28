@@ -470,6 +470,20 @@ response = pluck.ask("...", url=SpaceX, fallback=False)
 response = pluck.ask("...", url=SpaceX, generator=AgenticQueryGenerator())
 ```
 
+#### Reusing the schema (prompt caching)
+
+The schema is usually the largest part of the prompt, so `ask` places it in a stable system message (ahead of the question). Providers that support prompt caching can then cache it as a prefix — across the validate-and-retry step, across the agent's steps, and across repeated calls to the same endpoint.
+
+To avoid re-introspecting on every call, `create` introspects the schema once and reuses it:
+
+```python
+spacex = pluck.create(url=SpaceX)
+spacex.ask("the 5 latest launches")
+spacex.ask("the 3 biggest rockets")  # same schema, no re-introspection
+```
+
+You can also pass a previously-introspected schema (SDL) straight to `ask` with `schema=...`.
+
 #### Custom generators
 
 `ask` is built on a small `QueryGenerator` abstraction, so you are not tied to smolagents. Implement `pluck.generator.QueryGenerator` to plug in your own engine (a one-shot LLM call, a different agent framework, and so on):
