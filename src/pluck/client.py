@@ -2,7 +2,7 @@ import dataclasses
 import urllib.request
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from ._json import JsonSerializer
 
@@ -48,7 +48,7 @@ class GraphQLResponse:
     """
 
     data: Optional[Dict]
-    errors: Optional[Dict]
+    errors: Optional[List]
 
     @classmethod
     def from_dict(cls, response: Dict) -> "GraphQLResponse":

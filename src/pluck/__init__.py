@@ -23,12 +23,14 @@ The easiest way to get started is to run `pluck.execute` with a query.
 See the README.md on GitHub for more information.
 """
 
-from . import client
-from ._pluck import Response, create, execute
+from . import client, generator
+from ._pluck import Response, ask, create, execute
 
 __all__ = (
+    "ask",
     "create",
     "execute",
     "Response",
     "client",
+    "generator",
 )

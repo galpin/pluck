@@ -1,6 +1,6 @@
 [project]
 name = "pluck-graphql"
-version = "0.4.0"
+version = "0.5.0"
 description = "Transform GraphQL queries into Pandas data-frames."
 readme = "README.md"
 authors = [{ name = "Martin Galpin", email = "galpin@gmail.com" }]
@@ -21,6 +21,10 @@ dependencies = [
     "pandas>=1.4",
     "graphql-core>=3.2.1,<4",
 ]
+
+[project.optional-dependencies]
+# Optional, lazily-imported agent backend for `pluck.ask` (tested against 1.26).
+agent = ["smolagents>=1.14,<2"]
 
 [project.urls]
 Repository = "https://github.com/galpin/pluck"
@@ -51,5 +55,5 @@ module-name = "pluck"
 extend-select = ["I"]
 
 [tool.ty.rules]
-# orjson is an optional dependency, not always installed
+# orjson and smolagents are optional dependencies, not always installed
 unresolved-import = "warn"

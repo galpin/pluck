@@ -420,3 +420,55 @@ launches
 | 5eb87cdbffd86e000604b32d | RatSat     | Falcon 1         |
 | 5eb87cdcffd86e000604b32e | RazakSat   | Falcon 1         |
 
+### pluck.ask
+
+Pluck can also write the GraphQL query for you. `pluck.ask` takes a question in plain English, uses an LLM to generate a GraphQL query and then executes it.
+
+`ask` introspects the GraphQL schema, hands it to a pluggable, _agentic_ query generator (the agent can run queries against the API to check its work and self-correct), and then executes the generated query through the same pipeline as `execute` — so the `@frame` directive and `column_names` still apply.
+
+The default generator is built on [smolagents](https://github.com/huggingface/smolagents), which is an optional dependency:
+
+```bash
+pip install "pluck-graphql[agent]"
+```
+
+```python
+import pluck
+
+SpaceX = "https://main--spacex-l4uc6p.apollographos.net/graphql"
+
+response = pluck.ask("the 5 latest launches and their rocket names", url=SpaceX)
+launches, = response
+launches
+```
+
+The query that the LLM generated is available on the response as `response.query`.
+
+#### Choosing a model
+
+The default generator uses smolagents' `InferenceClientModel` (which needs a Hugging Face token, e.g. the `HF_TOKEN` environment variable). You can pass any smolagents model instead — for example, OpenAI via LiteLLM:
+
+```python
+from smolagents import LiteLLMModel
+from pluck.generator import SmolagentsQueryGenerator
+
+generator = SmolagentsQueryGenerator(model=LiteLLMModel(model_id="gpt-4o"))
+response = pluck.ask("the 5 latest launches", url=SpaceX, generator=generator)
+```
+
+#### Custom generators
+
+`ask` is built on a small `QueryGenerator` abstraction, so you are not tied to smolagents. Implement `pluck.generator.QueryGenerator` to plug in your own engine (a one-shot LLM call, a different agent framework, and so on):
+
+```python
+from pluck.generator import GenerateRequest, QueryGenerator
+
+class MyGenerator(QueryGenerator):
+    def generate(self, request: GenerateRequest) -> str:
+        # request.question  -> the natural-language question
+        # request.schema    -> the API schema, as SDL
+        # request.execute   -> run a GraphQL query against the API (to self-correct)
+        return "{ launches(limit: 5) @frame { mission_name } }"
+
+response = pluck.ask("...", url=SpaceX, generator=MyGenerator())
+```
