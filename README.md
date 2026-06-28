@@ -424,12 +424,14 @@ launches
 
 Pluck can also write the GraphQL query for you. `pluck.ask` takes a question in plain English, uses an LLM to generate a GraphQL query and then executes it.
 
-`ask` introspects the GraphQL schema, hands it to a pluggable, _agentic_ query generator (the agent can run queries against the API to check its work and self-correct), and then executes the generated query through the same pipeline as `execute` — so the `@frame` directive and `column_names` still apply.
+`ask` introspects the GraphQL schema, generates a query and executes it through the same pipeline as `execute` — so the `@frame` directive and `column_names` still apply. The generated query is available on the response as `response.query`.
 
-The default generator is built on [smolagents](https://github.com/huggingface/smolagents), which is an optional dependency:
+By default, `ask` uses a cheap, single-shot strategy: it asks the LLM for a query once, validates it against the schema _locally_ (no network round-trip) and retries once if it is invalid. If the resulting query still fails when executed, `ask` automatically escalates to an _agentic_ generator that runs queries against the API and self-corrects. In other words: fast when it works, robust when it doesn't.
+
+The LLM is powered by [smolagents](https://github.com/huggingface/smolagents), an optional dependency:
 
 ```bash
-pip install "pluck-graphql[agent]"
+pip install "pluck-graphql[llm]"
 ```
 
 ```python
@@ -442,18 +444,30 @@ launches, = response
 launches
 ```
 
-The query that the LLM generated is available on the response as `response.query`.
-
 #### Choosing a model
 
-The default generator uses smolagents' `InferenceClientModel` (which needs a Hugging Face token, e.g. the `HF_TOKEN` environment variable). You can pass any smolagents model instead — for example, OpenAI via LiteLLM:
+By default the generators use smolagents' `InferenceClientModel` (which needs a Hugging Face token, e.g. the `HF_TOKEN` environment variable). You can pass any smolagents model instead — for example, OpenAI via LiteLLM:
 
 ```python
 from smolagents import LiteLLMModel
-from pluck.generator import SmolagentsQueryGenerator
+from pluck.generator import SingleShotQueryGenerator
 
-generator = SmolagentsQueryGenerator(model=LiteLLMModel(model_id="gpt-4o"))
+generator = SingleShotQueryGenerator(model=LiteLLMModel(model_id="gpt-4o"))
 response = pluck.ask("the 5 latest launches", url=SpaceX, generator=generator)
+```
+
+#### Controlling the fallback
+
+The `fallback` argument controls escalation. By default it is an `AgenticQueryGenerator`. Pass `fallback=False` to use a single LLM call only, or pass your own generator:
+
+```python
+from pluck.generator import AgenticQueryGenerator
+
+# Single LLM call only, no agent:
+response = pluck.ask("...", url=SpaceX, fallback=False)
+
+# Or go straight to the agent:
+response = pluck.ask("...", url=SpaceX, generator=AgenticQueryGenerator())
 ```
 
 #### Custom generators

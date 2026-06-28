@@ -1,4 +1,5 @@
 import dataclasses
+import logging
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
@@ -14,7 +15,12 @@ from .client import (
     GraphQLResponse,
     UrllibGraphQLClient,
 )
-from .generator import GenerateRequest, QueryGenerator, SmolagentsQueryGenerator
+from .generator import (
+    AgenticQueryGenerator,
+    GenerateRequest,
+    QueryGenerator,
+    SingleShotQueryGenerator,
+)
 
 UrlType = str
 HeadersType = Optional[Dict[str, Any]]
@@ -23,6 +29,9 @@ VariablesType = Optional[Dict[str, Any]]
 PluckType = Callable[[str, VariablesType], "Response"]
 ColumnNames = Literal["full", "short"]
 ColumnNamesType = Union[ColumnNames, dict[str, ColumnNames]]
+# A fallback generator for `ask`: a QueryGenerator, None (use the default agent),
+# or False (disable escalation).
+FallbackType = Optional[Union[QueryGenerator, bool]]
 
 
 @dataclass(frozen=True)
@@ -58,6 +67,7 @@ def create(
     separator: str = ".",
     client: Optional[GraphQLClient] = None,
     generator: Optional[QueryGenerator] = None,
+    fallback: FallbackType = None,
 ) -> PluckType:
     """
     Create a pluck function equivalent to `execute` that is pre-configured with the specified options.
@@ -77,6 +87,8 @@ def create(
         generator:
             An optional QueryGenerator used by `ask` to generate queries from
             natural language.
+        fallback:
+            An optional fallback generator used by `ask` (see `ask`).
 
     Returns:
         A Response object. Iterating over the response will yield the data frames.
@@ -103,6 +115,7 @@ def create(
         *,
         column_names: Optional[ColumnNamesType] = None,
         generator: Optional[QueryGenerator] = generator,
+        fallback: FallbackType = fallback,
     ) -> Response:
         return ask(
             question,
@@ -112,6 +125,7 @@ def create(
             column_names=column_names,
             client=client,
             generator=generator,
+            fallback=fallback,
         )
 
     pluck.__doc__ = execute.__doc__
@@ -173,14 +187,20 @@ def ask(
     column_names: Optional[ColumnNamesType] = None,
     client: Optional[GraphQLClient] = None,
     generator: Optional[QueryGenerator] = None,
+    fallback: FallbackType = None,
 ) -> Response:
     """
     Answer a natural-language question by generating and executing a GraphQL query.
 
-    The target API is introspected for its schema, a `QueryGenerator` turns the
-    question into a GraphQL query and that query is then executed (exactly like
-    `execute`, so the `@frame` directive and `column_names` still apply). The
-    generated query is available on the returned response as `Response.query`.
+    The target API is introspected for its schema and a `QueryGenerator` turns the
+    question into a GraphQL query, which is then executed (exactly like `execute`,
+    so the `@frame` directive and `column_names` still apply). The generated query
+    is available on the returned response as `Response.query`.
+
+    By default this uses a cheap, single-shot generator and escalates to a more
+    robust agentic generator only if the single-shot query fails (a staged
+    fallback): the first query that executes without errors wins. If every
+    generator fails, the last response (with its errors) is returned.
 
     Args:
         question:
@@ -196,16 +216,23 @@ def ask(
         client:
             An optional GqlClient instance to use for executing the query.
         generator:
-            An optional QueryGenerator used to generate the query from the
-            question. The default is an agentic `SmolagentsQueryGenerator`, which
-            requires the optional `smolagents` dependency
-            (`pip install "pluck-graphql[agent]"`).
+            The primary QueryGenerator used to generate the query. The default is
+            a `SingleShotQueryGenerator`.
+        fallback:
+            The generator to escalate to if the primary query fails. The default
+            (`None`) uses an `AgenticQueryGenerator`. Pass `False` to disable
+            escalation, or another QueryGenerator to override it.
+
+            The default generators require the optional `smolagents` dependency
+            (`pip install "pluck-graphql[llm]"`).
 
     Returns:
         A Response object. Iterating over the response will yield the data frames.
     """
     client = client or UrllibGraphQLClient()
-    generator = generator or SmolagentsQueryGenerator()
+    primary = generator or SingleShotQueryGenerator()
+    if fallback is None:
+        fallback = AgenticQueryGenerator()
     schema = introspect_schema(client, url, headers)
 
     def run_query(raw_query: str) -> GraphQLResponse:
@@ -215,13 +242,31 @@ def ask(
             return GraphQLResponse(None, [{"message": f"Invalid GraphQL: {e}"}])
         return client.execute(GraphQLRequest(url, server_query, None, headers))
 
-    generated = generator.generate(GenerateRequest(question, schema, run_query))
-    response = execute(
-        generated,
-        url=url,
-        headers=headers,
-        separator=separator,
-        column_names=column_names,
-        client=client,
-    )
-    return dataclasses.replace(response, query=generated)
+    request = GenerateRequest(question, schema, run_query)
+    generators: List[QueryGenerator] = [primary]
+    if isinstance(fallback, QueryGenerator):
+        generators.append(fallback)
+
+    last: Optional[Response] = None
+    for index, current in enumerate(generators):
+        if index > 0:
+            logging.info("ask: escalating to fallback generator after failure.")
+        generated = current.generate(request)
+        try:
+            response = execute(
+                generated,
+                url=url,
+                headers=headers,
+                separator=separator,
+                column_names=column_names,
+                client=client,
+            )
+        except (graphql.GraphQLError, AssertionError) as e:
+            last = Response({}, [{"message": str(e)}], {}, generated)
+            continue
+        response = dataclasses.replace(response, query=generated)
+        if not response.errors:
+            return response
+        last = response
+    assert last is not None
+    return last

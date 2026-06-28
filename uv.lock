@@ -1937,7 +1937,7 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-agent = [
+llm = [
     { name = "smolagents" },
 ]
 
@@ -1959,9 +1959,9 @@ dev = [
 requires-dist = [
     { name = "graphql-core", specifier = ">=3.2.1,<4" },
     { name = "pandas", specifier = ">=1.4" },
-    { name = "smolagents", marker = "extra == 'agent'", specifier = ">=1.14,<2" },
+    { name = "smolagents", marker = "extra == 'llm'", specifier = ">=1.14,<2" },
 ]
-provides-extras = ["agent"]
+provides-extras = ["llm"]
 
 [package.metadata.requires-dev]
 dev = [

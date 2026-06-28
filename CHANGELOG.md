@@ -3,9 +3,11 @@
 ## 0.5.0
 * New: Adds `pluck.ask`, which answers a natural-language question by using an LLM to generate a GraphQL query and then executing it (see README.md for details).
 
-`ask` introspects the target schema, generates a query via a pluggable, agentic `QueryGenerator` and executes it through the same pipeline as `execute` (so the `@frame` directive and `column_names` still apply). The generated query is available on the response as `Response.query`.
+`ask` introspects the target schema, generates a query via a pluggable `QueryGenerator` and executes it through the same pipeline as `execute` (so the `@frame` directive and `column_names` still apply). The generated query is available on the response as `Response.query`.
 
-The default generator is built on [smolagents](https://github.com/huggingface/smolagents), an optional dependency installed with `pip install "pluck-graphql[agent]"`. Any model supported by smolagents can be used, and the `QueryGenerator` abstraction allows plugging in a completely custom engine.
+By default it uses a cheap, single-shot generator (one LLM call, with the query validated against the schema locally and one corrective retry) and escalates to a more robust agentic generator only if the generated query actually fails — a staged fallback that is fast when it works and robust when it doesn't. The `fallback` argument controls or disables the escalation.
+
+The default generators are built on [smolagents](https://github.com/huggingface/smolagents), an optional dependency installed with `pip install "pluck-graphql[llm]"`. Any model supported by smolagents can be used, and the `QueryGenerator` abstraction allows plugging in a completely custom engine.
 
 ## 0.4.0
 * Fix: Only fields that are within the selection set of the original query are now returned as columns.
