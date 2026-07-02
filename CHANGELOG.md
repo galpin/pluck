@@ -5,11 +5,11 @@
 
 `ask` introspects the target schema, generates a query via a pluggable `QueryGenerator` and executes it through the same pipeline as `execute` (so the `@frame` directive and `column_names` still apply). The generated query is available on the response as `Response.query`.
 
-By default it uses a cheap, single-shot generator (one LLM call, with the query validated against the schema locally and one corrective retry) and escalates to a more robust agentic generator only if the generated query actually fails — a staged fallback that is fast when it works and robust when it doesn't. The `fallback` argument controls or disables the escalation.
+By default it uses an `AgenticQueryGenerator`: rather than placing the whole schema in the prompt (or building a RAG index), the schema is written to a file and an agent explores it with tools (`search_schema`, `show_type`) and tests candidate queries against the API (`execute_graphql`) in a feedback loop — so even a large schema never enters the context window.
 
-The default generators are built on [smolagents](https://github.com/huggingface/smolagents), an optional dependency installed with `pip install "pluck-graphql[llm]"`. Any model supported by smolagents can be used, and the `QueryGenerator` abstraction allows plugging in a completely custom engine.
+The default generator is built on [smolagents](https://github.com/huggingface/smolagents), an optional dependency installed with `pip install "pluck-graphql[llm]"`. Any model supported by smolagents can be used, and the `QueryGenerator` abstraction allows plugging in a completely custom engine.
 
-The schema is placed in a stable system-message prefix (ahead of the question) so that providers supporting prompt caching can cache it. `create` introspects the schema once and reuses it across calls, and `ask` accepts a pre-introspected `schema` to skip the round-trip.
+`create` introspects the schema once and reuses it across calls, and `ask` accepts a pre-introspected `schema` to skip the round-trip.
 
 ## 0.4.0
 * Fix: Only fields that are within the selection set of the original query are now returned as columns.

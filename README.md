@@ -426,9 +426,9 @@ Pluck can also write the GraphQL query for you. `pluck.ask` takes a question in 
 
 `ask` introspects the GraphQL schema, generates a query and executes it through the same pipeline as `execute` — so the `@frame` directive and `column_names` still apply. The generated query is available on the response as `response.query`.
 
-By default, `ask` uses a cheap, single-shot strategy: it asks the LLM for a query once, validates it against the schema _locally_ (no network round-trip) and retries once if it is invalid. If the resulting query still fails when executed, `ask` automatically escalates to an _agentic_ generator that runs queries against the API and self-corrects. In other words: fast when it works, robust when it doesn't.
+Rather than putting the whole schema into the prompt (which is expensive for large APIs) or building a RAG index, `ask` writes the schema to a file and gives an agent tools to explore it on demand — `search_schema` to find relevant types and fields, `show_type` to read a single type's definition — plus `execute_graphql` to run candidate queries against the API. The agent works in a test-and-fix feedback loop, the way a coding agent navigates a large codebase, so even a very large schema never enters the context window.
 
-The LLM is powered by [smolagents](https://github.com/huggingface/smolagents), an optional dependency:
+The agent is powered by [smolagents](https://github.com/huggingface/smolagents), an optional dependency:
 
 ```bash
 pip install "pluck-graphql[llm]"
@@ -446,35 +446,19 @@ launches
 
 #### Choosing a model
 
-By default the generators use smolagents' `InferenceClientModel` (which needs a Hugging Face token, e.g. the `HF_TOKEN` environment variable). You can pass any smolagents model instead — for example, OpenAI via LiteLLM:
+By default the agent uses smolagents' `InferenceClientModel` (which needs a Hugging Face token, e.g. the `HF_TOKEN` environment variable). You can pass any smolagents model instead — for example, OpenAI via LiteLLM:
 
 ```python
 from smolagents import LiteLLMModel
-from pluck.generator import SingleShotQueryGenerator
+from pluck.generator import AgenticQueryGenerator
 
-generator = SingleShotQueryGenerator(model=LiteLLMModel(model_id="gpt-4o"))
+generator = AgenticQueryGenerator(model=LiteLLMModel(model_id="gpt-4o"))
 response = pluck.ask("the 5 latest launches", url=SpaceX, generator=generator)
 ```
 
-#### Controlling the fallback
+#### Reusing the schema
 
-The `fallback` argument controls escalation. By default it is an `AgenticQueryGenerator`. Pass `fallback=False` to use a single LLM call only, or pass your own generator:
-
-```python
-from pluck.generator import AgenticQueryGenerator
-
-# Single LLM call only, no agent:
-response = pluck.ask("...", url=SpaceX, fallback=False)
-
-# Or go straight to the agent:
-response = pluck.ask("...", url=SpaceX, generator=AgenticQueryGenerator())
-```
-
-#### Reusing the schema (prompt caching)
-
-The schema is usually the largest part of the prompt, so `ask` places it in a stable system message (ahead of the question). Providers that support prompt caching can then cache it as a prefix — across the validate-and-retry step, across the agent's steps, and across repeated calls to the same endpoint.
-
-To avoid re-introspecting on every call, `create` introspects the schema once and reuses it:
+Introspecting a large schema is a network round-trip. `create` introspects once and reuses the schema across calls:
 
 ```python
 spacex = pluck.create(url=SpaceX)
@@ -486,7 +470,7 @@ You can also pass a previously-introspected schema (SDL) straight to `ask` with 
 
 #### Custom generators
 
-`ask` is built on a small `QueryGenerator` abstraction, so you are not tied to smolagents. Implement `pluck.generator.QueryGenerator` to plug in your own engine (a one-shot LLM call, a different agent framework, and so on):
+`ask` is built on a small `QueryGenerator` abstraction, so you are not tied to smolagents. Implement `pluck.generator.QueryGenerator` to plug in your own engine:
 
 ```python
 from pluck.generator import GenerateRequest, QueryGenerator

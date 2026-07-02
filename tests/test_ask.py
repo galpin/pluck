@@ -8,12 +8,12 @@ from pluck.client import GraphQLClient, GraphQLRequest, GraphQLResponse
 from pluck.generator import (
     GenerateRequest,
     QueryGenerator,
-    SingleShotQueryGenerator,
-    _build_single_shot_system,
-    _build_single_shot_user,
+    _build_agentic_task,
     _extract_query,
-    _generate_single_shot,
-    _validate_query,
+    _render_root_fields,
+    _schema_file,
+    _search_schema,
+    _show_type,
 )
 
 URL = "http://api/graphql"
@@ -51,7 +51,8 @@ GENERATED_QUERY = (
 class MockGraphQLClient(GraphQLClient):
     """
     Answers introspection requests by running them against a real schema, and
-    answers every other request with canned data. Records every request.
+    answers every other request with canned data. Records every request. If
+    `error_on` is set, any data query containing that marker returns an error.
     """
 
     def __init__(
@@ -95,10 +96,8 @@ class FakeQueryGenerator(QueryGenerator):
         self._probe = probe
         self.request: GenerateRequest | None = None
         self.probe_result: GraphQLResponse | None = None
-        self.call_count = 0
 
     def generate(self, request: GenerateRequest) -> str:
-        self.call_count += 1
         self.request = request
         if self._probe is not None:
             self.probe_result = request.execute(self._probe)
@@ -210,6 +209,18 @@ def test_ask_implicit_mode_query():
     assert list(response.frames.keys()) == ["default"]
 
 
+def test_ask_returns_errors_when_query_fails():
+    # The generator returns a query the server rejects; ask surfaces the errors on
+    # the response instead of raising (there is no fallback).
+    generator = FakeQueryGenerator(query="{ launches { mission_name MARKER } }")
+    client = MockGraphQLClient(error_on="MARKER")
+
+    response = pluck.ask(QUESTION, url=URL, client=client, generator=generator)
+
+    assert response.errors
+    assert response.query == "{ launches { mission_name MARKER } }"
+
+
 def test_ask_introspection_error_raises():
     class IntrospectionErrorClient(GraphQLClient):
         def execute(self, request: GraphQLRequest) -> GraphQLResponse:
@@ -248,181 +259,74 @@ def test_extract_query_passthrough_when_no_fence():
     assert _extract_query("  { launches { id } }  ") == "{ launches { id } }"
 
 
-def test_single_shot_system_holds_schema_and_frame_docs():
-    # The schema lives in the stable system message (the cacheable prefix), not
-    # the user message.
-    system = _build_single_shot_system("type Query { a: Int }")
-
-    assert "type Query { a: Int }" in system
-    assert "@frame" in system
-    assert "execute_graphql" not in system  # single-shot must not mention the tool
+# --- schema-exploration tools (the agent's window into the schema file) ---
 
 
-def test_single_shot_user_holds_question_not_schema():
-    user = _build_single_shot_user("my question")
+def test_search_schema_finds_type_and_field():
+    schema = build_schema(SCHEMA)
 
-    assert "my question" in user
-    assert "type Query" not in user  # the schema is not duplicated into the user turn
+    result = _search_schema(schema, "rocket")
 
-
-def test_single_shot_user_includes_errors_on_retry():
-    user = _build_single_shot_user("q", ["Cannot query field 'nope'."])
-
-    assert "Cannot query field 'nope'." in user
+    assert "Rocket" in result  # type-name match
+    assert "Launch.rocket" in result  # field match on another type
+    assert "Rocket.rocket_name" in result
 
 
-# --- local validation ---
+def test_search_schema_reports_no_match():
+    schema = build_schema(SCHEMA)
+
+    assert "No types or fields match" in _search_schema(schema, "spaceship")
 
 
-def test_validate_query_accepts_valid():
-    assert _validate_query(SCHEMA, "{ launches { mission_name } }") == []
+def test_show_type_returns_sdl():
+    schema = build_schema(SCHEMA)
+
+    result = _show_type(schema, "Launch")
+
+    assert result.startswith("type Launch")
+    assert "mission_name" in result
+    assert "rocket: Rocket" in result
 
 
-def test_validate_query_rejects_unknown_field():
-    assert _validate_query(SCHEMA, "{ launches { nope } }")
+def test_show_type_reports_unknown_name():
+    schema = build_schema(SCHEMA)
+
+    assert "No type named 'Nope'" in _show_type(schema, "Nope")
 
 
-def test_validate_query_rejects_syntax_error():
-    assert _validate_query(SCHEMA, "{ this is ! invalid")
+def test_render_root_fields_lists_query_fields_with_types():
+    schema = build_schema(SCHEMA)
+
+    result = _render_root_fields(schema)
+
+    assert "Query:" in result
+    assert "launches(limit: Int): [Launch!]" in result
 
 
-def test_validate_query_ignores_frame_directive():
-    assert _validate_query(SCHEMA, "{ launches @frame { mission_name } }") == []
+def test_build_agentic_task_is_schema_free():
+    schema = build_schema(SCHEMA)
+
+    task = _build_agentic_task(QUESTION, schema)
+
+    # Contains the question, the @frame docs, and the root-field seed...
+    assert QUESTION in task
+    assert "@frame" in task
+    assert "launches(limit: Int): [Launch!]" in task
+    # ...but NOT the full schema: type definitions are only reachable via tools.
+    assert "type Launch" not in task
+    assert "type Rocket" not in task
+    assert "rocket_name" not in task  # a deep field, reachable only via show_type
 
 
-# --- single-shot generation ---
+def test_schema_file_writes_sdl_and_cleans_up():
+    with _schema_file(SCHEMA) as path:
+        assert path.exists()
+        assert path.read_text() == SCHEMA
+
+    assert not path.exists()
 
 
-def test_single_shot_returns_first_valid():
-    calls = []
-
-    def complete(system, user):
-        calls.append((system, user))
-        return "{ launches { mission_name } }"
-
-    query = _generate_single_shot(complete, QUESTION, SCHEMA, max_attempts=2)
-
-    assert query == "{ launches { mission_name } }"
-    assert len(calls) == 1
-
-
-def test_single_shot_retries_with_stable_system_and_errors_in_user():
-    calls = []
-
-    def complete(system, user):
-        calls.append((system, user))
-        if len(calls) == 1:
-            return "{ launches { nope } }"  # invalid -> triggers a retry
-        return "{ launches { mission_name } }"
-
-    query = _generate_single_shot(complete, QUESTION, SCHEMA, max_attempts=2)
-
-    assert query == "{ launches { mission_name } }"
-    assert len(calls) == 2
-    # The system message (cacheable prefix) is identical across attempts; only the
-    # user message changes, carrying the validation errors.
-    assert calls[0][0] == calls[1][0]
-    assert "previous attempt was invalid" in calls[1][1]
-
-
-def test_single_shot_gives_up_after_max_attempts():
-    calls = []
-
-    def complete(system, user):
-        calls.append((system, user))
-        return "{ launches { nope } }"  # always invalid
-
-    query = _generate_single_shot(complete, QUESTION, SCHEMA, max_attempts=3)
-
-    assert len(calls) == 3
-    assert query == "{ launches { nope } }"
-
-
-# --- staged escalation in ask ---
-
-BAD_MARKER = "MARKER"
-GOOD_FALLBACK_QUERY = "{ launches @frame { mission_name } }"
-
-
-def test_ask_falls_back_on_server_errors():
-    primary = FakeQueryGenerator(query="{ launches { mission_name MARKER } }")
-    fallback = FakeQueryGenerator(query=GOOD_FALLBACK_QUERY)
-    client = MockGraphQLClient(error_on=BAD_MARKER)
-
-    response = pluck.ask(
-        QUESTION, url=URL, client=client, generator=primary, fallback=fallback
-    )
-
-    assert list(response.frames.keys()) == ["launches"]
-    assert response.query == GOOD_FALLBACK_QUERY
-    assert primary.call_count == 1
-    assert fallback.call_count == 1
-
-
-def test_ask_no_fallback_when_primary_succeeds():
-    primary = FakeQueryGenerator()
-    fallback = FakeQueryGenerator()
-    client = MockGraphQLClient()
-
-    pluck.ask(QUESTION, url=URL, client=client, generator=primary, fallback=fallback)
-
-    assert fallback.call_count == 0
-    assert len(client.introspection_requests) == 1
-    assert len(client.data_requests) == 1
-
-
-def test_ask_fallback_on_invalid_query():
-    primary = FakeQueryGenerator(query="{ this is ! invalid")
-    fallback = FakeQueryGenerator(query=GOOD_FALLBACK_QUERY)
-    client = MockGraphQLClient()
-
-    response = pluck.ask(
-        QUESTION, url=URL, client=client, generator=primary, fallback=fallback
-    )
-
-    assert list(response.frames.keys()) == ["launches"]
-    assert fallback.call_count == 1
-
-
-def test_ask_fallback_disabled():
-    primary = FakeQueryGenerator(query="{ launches { mission_name MARKER } }")
-    client = MockGraphQLClient(error_on=BAD_MARKER)
-
-    response = pluck.ask(
-        QUESTION, url=URL, client=client, generator=primary, fallback=False
-    )
-
-    assert response.errors
-    assert primary.call_count == 1
-
-
-def test_ask_returns_last_errors_when_all_fail():
-    primary = FakeQueryGenerator(query="{ launches { mission_name MARKER } }")
-    fallback = FakeQueryGenerator(query="{ launches { mission_name MARKER } }")
-    client = MockGraphQLClient(error_on=BAD_MARKER)
-
-    response = pluck.ask(
-        QUESTION, url=URL, client=client, generator=primary, fallback=fallback
-    )
-
-    assert response.errors
-    assert primary.call_count == 1
-    assert fallback.call_count == 1
-
-
-def test_create_ask_forwards_fallback():
-    primary = FakeQueryGenerator(query="{ launches { mission_name MARKER } }")
-    fallback = FakeQueryGenerator(query=GOOD_FALLBACK_QUERY)
-    client = MockGraphQLClient(error_on=BAD_MARKER)
-    created = pluck.create(url=URL, client=client, generator=primary, fallback=fallback)
-
-    response = created.ask(QUESTION)
-
-    assert response.query == GOOD_FALLBACK_QUERY
-    assert fallback.call_count == 1
-
-
-# --- schema reuse (prompt caching) ---
+# --- schema reuse ---
 
 
 def test_ask_uses_supplied_schema_without_introspecting():
@@ -450,17 +354,13 @@ def test_create_ask_introspects_schema_once_across_calls():
     assert len(client.data_requests) == 2  # one execution per call
 
 
-def test_default_generators_raise_without_dependency():
+def test_default_generator_raises_without_dependency():
     if importlib.util.find_spec("smolagents") is not None:
         pytest.skip("smolagents is installed")
     request = GenerateRequest(QUESTION, SCHEMA, lambda q: GraphQLResponse(None, None))
 
-    for generator in (
-        SingleShotQueryGenerator(),
-        pluck.generator.AgenticQueryGenerator(),
-    ):
-        with pytest.raises(ImportError, match=r"pluck-graphql\[llm\]"):
-            generator.generate(request)
+    with pytest.raises(ImportError, match=r"pluck-graphql\[llm\]"):
+        pluck.generator.AgenticQueryGenerator().generate(request)
 
 
 def test_smolagents_import_surface_when_installed():
